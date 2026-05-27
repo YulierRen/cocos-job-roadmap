@@ -1,0 +1,24 @@
+
+#///////////////////////////
+# Cocos Creator 3D Project
+#///////////////////////////
+UIFrameWorkDemo/library/
+UIFrameWorkDemo/temp/
+UIFrameWorkDemo/local/
+UIFrameWorkDemo/build/
+UIFrameWorkDemo/profiles/
+UIFrameWorkDemo/native
+#//////////////////////////
+# NPM
+#//////////////////////////
+UIFrameWorkDemo/node_modules/
+
+#//////////////////////////
+# VSCode
+#//////////////////////////
+UIFrameWorkDemo/.vscode/
+
+#//////////////////////////
+# WebStorm
+#//////////////////////////
+UIFrameWorkDemo/.idea/

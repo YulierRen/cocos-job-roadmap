@@ -1,0 +1,22 @@
+{
+    "MainUI": [
+        {
+            "id": "1",
+            "buttonNodeName" : "Button",
+            "eventMainType": "EventType.UI",
+            "eventSubType": "UIType.MainUI",
+            "payload": "这是MainUI的按钮，按下唤起PopupUI",
+            "targetUI": "PopupUI"
+        }
+    ],
+    "PopupUI": [
+        {
+            "id": "1",
+            "buttonNodeName" : "Button",
+            "eventMainType": "EventType.UI",
+            "eventSubType": "UIType.PopupUI",
+            "payload": "这是PopupUI的按钮，按下关闭PopupUI",
+            "targetUI": "PopupUI"
+        }
+    ]
+}

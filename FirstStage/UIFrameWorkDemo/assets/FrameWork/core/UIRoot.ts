@@ -1,5 +1,6 @@
-import { _decorator, Component, Node, Prefab } from 'cc';
+import { _decorator, Component, instantiate, Node, Prefab } from 'cc';
 import { UIManager } from './UIManager';
+import { ResMgr } from './ResMgr';
 
 
 /**
@@ -23,16 +24,34 @@ export class UIRoot extends Component {
         this.uiRoot = this.node.getChildByName("Root");
     }
 
-    EnterUI(node : Node){
-        if(this.uiRoot == null){
-            console.error("UIRoot is null");
-            return;
+    /**
+     * @param name : 界面名称，必须和资源名一致
+     */
+    async EnterUIByName(name : string) : Promise<Node>{
+        const existNode = this.uiRoot.getChildByName(name);
+        if(existNode != null){
+            return existNode;
         }
+
+        var node = UIManager.Instance.UIGet(name);
+        if(node != null){
+            this.uiRoot.addChild(node);
+            return node;
+        }
+        var prefab = await ResMgr.Instance.GetAsset("GUI",name,Prefab) as Prefab;
+        var node = instantiate(prefab) as Node;
+        node.name = name;
         this.uiRoot.addChild(node);
+
+        return node;
     }
 
-    ExitUI(node : Node){
-        node.removeFromParent();
+    ExitUIByName(name : string){
+        var node = this.uiRoot.getChildByName(name);
+        if(node != null){
+            UIManager.Instance.UIPut(node,name);
+            node.removeFromParent();
+        }
     }
 }
 

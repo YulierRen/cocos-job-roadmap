@@ -1,0 +1,756 @@
+# day2
+
+Generated At: 2026-05-28T10:36:36.252Z
+
+## 标题: assets/Boot/Boot.ts
+内容:
+import { _decorator, Component, director, Node } from 'cc';
+import { GameEntry } from '../Game/scripts/game/GameEntry';
+import { UIRoot } from '../FrameWork/core/UIRoot';
+import { UIManager } from '../FrameWork/core/UIManager';
+import { EventBus } from '../FrameWork/core/EventBus';
+import { ResMgr } from '../FrameWork/core/ResMgr';
+import { ConfigMgr } from '../FrameWork/core/ConfigMgr';
+const { ccclass, property } = _decorator;
+
+@ccclass('Boot')
+export class Boot extends Component {
+    public static Instance : Boot = null;
+
+    private getPersistTarget(): Node {
+        const scene = director.getScene();
+        let persistTarget = this.node;
+
+        while (persistTarget.parent != null && persistTarget.parent !== scene) {
+            persistTarget = persistTarget.parent;
+        }
+
+        return persistTarget;
+    }
+
+    protected onLoad(): void {
+        if(Boot.Instance == null){
+            Boot.Instance = this;
+        }else{
+            this.destroy();
+            return;
+        }
+        
+        director.addPersistRootNode(this.getPersistTarget());
+        
+        this.FrameWorkInit();
+        
+        
+    }
+
+    FrameWorkInit(){
+        //事件总线
+        this.node.addComponent(EventBus).Init();
+
+        //资源管理器
+        this.node.addComponent(ResMgr).Init();
+
+        //配置加载器
+        this.node.addComponent(ConfigMgr).Init();
+
+        //层级管理器
+        console.log("UIRoot Init",this.node.getChildByName("Root"));
+        this.node.addComponent(UIRoot).Init();
+
+        //界面管理器
+        this.node.addComponent(UIManager).Init();
+
+
+        //游戏入口
+        this.node.addComponent(GameEntry).EnterGame();
+
+    }
+}
+
+
+
+
+## 标题: assets/FrameWork/core/ConfigMgr.ts
+内容:
+import { _decorator, Component, JsonAsset, Node } from 'cc';
+import { ResMgr } from './ResMgr';
+import { Bundle, Config, EventType, UIType } from '../../Game/scripts/constant/constant';
+import { LogMgr } from './LogMgr';
+import { EventBus } from './EventBus';
+
+
+export class ConfigData{
+    buttonNodeName: string;
+    eventMainType: EventType;
+    eventSubType: UIType;
+    payload: string;
+    targetUI: string;
+}
+
+export class ConfigMgr extends Component {
+    public static Instance : ConfigMgr = null;
+
+    protected onLoad(): void{
+        if(ConfigMgr.Instance == null){
+            ConfigMgr.Instance = this;
+        }
+        else{
+            this.destroy();
+            return;
+        }
+    }
+
+    Init(){
+
+    }
+    /**
+     * 
+     * @param node : 传node根节点，ConfigMgr会根据这个节点的名字去配置文件里找对应的按钮配置，然后给每个按钮添加事件
+     * @returns 
+     */
+
+    async AddButtonEventByConfig(node: Node){
+        var config = await ConfigMgr.Instance.getAllButtonConfigs(node.name);
+        console.log("MainUI loadButton config",config);
+        config.forEach(item =>{
+            var buttonNode = node.getChildByName(item.buttonNodeName);
+            if(buttonNode != null){
+                this.AddButtonEvent(buttonNode,item.eventMainType,item.eventSubType,item.payload);
+            }else{
+                console.log(`MainUI loadButton buttonNode ${item.buttonNodeName} not found`);
+            }
+        })
+    }
+    AddButtonEvent(node: Node, eventMainType: EventType, eventSubType: UIType, payload: string){
+        if((node as any).__configClickBound){
+            return;
+        }
+        (node as any).__configClickBound = true;
+
+        node.on(Node.EventType.TOUCH_END,()=>{
+            console.log(node.name,eventMainType,eventSubType,payload);
+            EventBus.Instance.Emit(eventMainType, eventSubType, payload);
+        })
+    }
+
+    
+    async getAllButtonConfigs(UIName: string) : Promise<ConfigData[] | null> {
+        var config = await ResMgr.Instance.GetAsset(Bundle.Config,Config.UIConfig,JsonAsset) as JsonAsset;
+        if(config == null){
+            LogMgr.Warn("ConfigMgr getAllButtonConfigs config is null");
+            return null;
+        }
+        const configData = config.json;
+        if(configData[UIName] == null){
+            LogMgr.Warn(`ConfigMgr getAllButtonConfigs UIName ${UIName} not found`);
+            return null;
+        }
+        
+        const uiConfigs = configData[UIName] as Array<any>;
+        const result = uiConfigs.map(item => {
+            const configDataObj = new ConfigData();
+            configDataObj.buttonNodeName = item.buttonNodeName;
+            configDataObj.eventMainType = this.parseEnumValue(item.eventMainType, 'EventType', EventType) as EventType;
+            configDataObj.eventSubType = this.parseEnumValue(item.eventSubType, 'UIType', UIType) as UIType;
+            configDataObj.payload = item.payload;
+            configDataObj.targetUI = item.targetUI;
+            return configDataObj;
+        });
+
+        return result;
+
+    }
+
+    async getConfigByButtonName(UIName: string, buttonNodeName: string) : Promise<ConfigData | null> {
+        var config = await ResMgr.Instance.GetAsset(Bundle.Config,Config.UIConfig,JsonAsset) as JsonAsset;
+        if(config == null){
+            LogMgr.Warn("ConfigMgr getConfigByButtonName config is null");
+            return null;
+        }
+        const configData = config.json;
+        if(configData[UIName] == null){
+            LogMgr.Warn(`ConfigMgr getConfigByButtonName UIName ${UIName} not found`);
+            return null;
+        }
+        
+        const uiConfigs = configData[UIName] as Array<any>;
+        const result = uiConfigs.find(item => item.buttonNodeName === buttonNodeName);
+        
+        if(result == null){
+            LogMgr.Warn(`ConfigMgr getConfigByButtonName buttonNodeName ${buttonNodeName} not found in ${UIName}`);
+            return null;
+        }
+
+        const configDataObj = new ConfigData();
+        configDataObj.buttonNodeName = result.buttonNodeName;
+        configDataObj.eventMainType = this.parseEnumValue(result.eventMainType, 'EventType', EventType) as EventType;
+        configDataObj.eventSubType = this.parseEnumValue(result.eventSubType, 'UIType', UIType) as UIType;
+        configDataObj.payload = result.payload;
+        configDataObj.targetUI = result.targetUI;
+        
+        return configDataObj;
+    }
+
+    async getConfigById(UIName: string, id: string) : Promise<ConfigData | null> {
+        // 这里可以根据UIName和id从配置中获取对应的配置项
+        var config = await ResMgr.Instance.GetAsset(Bundle.Config,Config.UIConfig,JsonAsset) as JsonAsset;
+        if(config == null){
+            LogMgr.Warn("ConfigMgr getConfigById config is null");
+            return null;
+        }
+        
+        const configData = config.json;
+        if(configData[UIName] == null){
+            LogMgr.Warn(`ConfigMgr getConfigById UIName ${UIName} not found`);
+            return null;
+        }
+        
+        const uiConfigs = configData[UIName] as Array<any>;
+        const result = uiConfigs.find(item => item.id === id);
+        
+        if(result == null){
+            LogMgr.Warn(`ConfigMgr getConfigById id ${id} not found in ${UIName}`);
+            return null;
+        }
+
+        const configDataObj = new ConfigData();
+        configDataObj.buttonNodeName = result.buttonNodeName;
+        configDataObj.eventMainType = this.parseEnumValue(result.eventMainType, 'EventType', EventType) as EventType;
+        configDataObj.eventSubType = this.parseEnumValue(result.eventSubType, 'UIType', UIType) as UIType;
+        configDataObj.payload = result.payload;
+        configDataObj.targetUI = result.targetUI;
+        
+        return configDataObj;
+    }
+
+    //加载并缓存bundle中的配置文件
+    async loadConfig(){
+        await ResMgr.Instance.GetAsset(Bundle.Config,Config.UIConfig,JsonAsset)
+    }
+
+    // 把字符串转成Constant的底层number。
+    private parseEnumValue(rawValue: unknown, enumName: string, enumObj: any): number {
+        if (typeof rawValue === 'number') {
+            return rawValue;
+        }
+
+        if (typeof rawValue !== 'string') {
+            LogMgr.Warn(`ConfigMgr parseEnumValue invalid value for ${enumName}: ${rawValue}`);
+            return 0;
+        }
+
+        const value = rawValue.trim();
+        let memberName = value;
+
+        if (value.includes('.')) {
+            const [typeName, key] = value.split('.');
+            if (typeName !== enumName) {
+                LogMgr.Warn(`ConfigMgr parseEnumValue enum name mismatch, expect ${enumName}, got ${typeName}`);
+            }
+            memberName = key;
+        }
+
+        if (value === enumName) {
+            const firstEnumKey = Object.keys(enumObj).find((key) => {
+                return Number.isNaN(Number(key)) && typeof enumObj[key] === 'number';
+            });
+            if (firstEnumKey != null) {
+                return enumObj[firstEnumKey] as number;
+            }
+            LogMgr.Warn(`ConfigMgr parseEnumValue ${enumName} has no numeric members`);
+            return 0;
+        }
+
+        const enumValue = enumObj[memberName];
+        if (typeof enumValue === 'number') {
+            return enumValue;
+        }
+
+        LogMgr.Warn(`ConfigMgr parseEnumValue invalid enum member: ${value}`);
+        return 0;
+    }
+}
+
+
+
+
+## 标题: assets/FrameWork/core/EventBus.ts
+内容:
+import { _decorator, Component, Node } from 'cc';
+
+export class EventBus extends Component {
+    //全局单例的事件总线工具
+    public static Instance : EventBus = null;
+
+    private eventMap: any = {};
+
+    protected onLoad(): void{
+        if(EventBus.Instance == null){
+            EventBus.Instance = this;
+        }else{
+            this.destroy();
+        }
+    }
+    Init(){
+        this.eventMap = {};
+    }
+
+    AddEventListener(mainType: number,callback: Function, caller){
+        if(this.eventMap[mainType] == null){
+            this.eventMap[mainType] = [];
+        }
+        for(var i = 0; i < this.eventMap[mainType].length; i++){
+            if(this.eventMap[mainType][i].callback == callback && this.eventMap[mainType][i].caller == caller){
+                return;
+            }
+        }
+        this.eventMap[mainType].push({callback: callback, caller: caller});
+    }
+
+    RemoveEventListener(mainType: number, callback: Function, caller){
+        if(this.eventMap[mainType] != null){
+            this.eventMap[mainType] = this.eventMap[mainType].filter((item) => item.callback !== callback || item.caller !== caller);
+        }
+    }
+
+    Emit(mainType: number, subType: number, udata: any){
+        if(this.eventMap[mainType] != null){
+            for(var i = 0; i < this.eventMap[mainType].length; i++){
+                if(this.eventMap[mainType][i].callback != null){
+                    this.eventMap[mainType][i].callback.call(this.eventMap[mainType][i].caller,mainType,subType, udata);
+                }
+            }
+        }
+    }
+}
+
+
+
+
+## 标题: assets/FrameWork/core/LogMgr.ts
+内容:
+import { _decorator, Component, Node } from 'cc';
+
+export class LogMgr extends Component {
+    public static Instance : LogMgr = null;
+
+    protected onLoad(): void{
+        if(LogMgr.Instance == null){
+            LogMgr.Instance = this;
+        }
+        else{
+            this.destroy();
+            return;
+        }
+    }
+
+    /**
+     * 普通日志
+     */
+    public static Log(message: any, ...args: any[]): void {
+        if (LogMgr.Instance) {
+            console.log(message, ...args);
+        }
+    }
+
+    /**
+     * 警告日志
+     */
+    public static Warn(message: any, ...args: any[]): void {
+        if (LogMgr.Instance) {
+            console.warn(message, ...args);
+        }
+    }
+
+    /**
+     * 错误日志
+     */
+    public static Error(message: any, ...args: any[]): void {
+        if (LogMgr.Instance) {
+            console.error(message, ...args);
+        }
+    }
+
+    /**
+     * 调试日志
+     */
+    public static Debug(message: any, ...args: any[]): void {
+        if (LogMgr.Instance) {
+            console.debug(message, ...args);
+        }
+    }
+
+    /**
+     * 信息日志
+     */
+    public static Info(message: any, ...args: any[]): void {
+        if (LogMgr.Instance) {
+            console.info(message, ...args);
+        }
+    }
+
+
+    /**
+     * 清空控制台日志
+     */
+    public static Clear(): void {
+        if (LogMgr.Instance) {
+            console.clear();
+        }
+    }
+
+}
+
+
+
+
+## 标题: assets/FrameWork/core/ResMgr.ts
+内容:
+import { _decorator, AssetManager, assetManager, Component, Node } from 'cc';
+
+export class ResMgr extends Component {
+    public static Instance : ResMgr = null;
+
+    private resMap: any = {};
+
+    protected onLoad(): void{
+        if(ResMgr.Instance == null){
+            ResMgr.Instance = this;
+        }else{
+            this.destroy();
+        }
+    }
+
+    Init(){
+        this.resMap = {};
+    }
+
+
+    async GetAsset(bundleName : string, assetName : string, assetType : any){
+        var bundle = await this.LoadBundle(bundleName) as unknown as AssetManager.Bundle;
+
+        if(bundle == null){
+            console.log("bundle is null");
+            return null;
+        }
+
+        var assetData = await this.GetAssetFromBundle(bundle, assetName, assetType);
+        if(assetData == null){
+            console.log("assetData is null");
+            return null;
+        }
+        return assetData;
+        
+    }
+
+    async GetAssetFromBundle(bundle: AssetManager.Bundle, assetName : string, assetType : any){
+        return new Promise((resolve, reject)=>{
+            bundle.load(assetName, assetType, (err, assetData)=>{
+                if(err) {
+                    reject(err);
+                    return;
+                }
+                else {
+                    resolve(assetData);
+                }
+            });
+        });
+    }
+
+    async LoadBundle(bundleName : string){
+        return new Promise((resolve, reject)=>{
+            assetManager.loadBundle(bundleName, (err, bundleData)=>{
+                if(err) {
+                    console.log(err);
+                    reject(null);
+                    return;
+                }
+                else {
+                    resolve(bundleData);
+                    return;
+                }
+            })
+        });
+    }
+}
+
+
+
+
+## 标题: assets/FrameWork/core/Types.ts
+内容:
+import { _decorator, Component, Node } from 'cc';
+
+export class Types extends Component {
+    start() {
+
+    }
+
+    update(deltaTime: number) {
+        
+    }
+}
+
+
+
+
+## 标题: assets/FrameWork/core/UIManager.ts
+内容:
+import { _decorator, Component, instantiate, Node, Prefab } from 'cc';
+
+export class UIManager extends Component {
+
+    public static Instance : UIManager = null;
+
+    private NodePool: any = {};
+
+
+    protected onLoad(): void{
+        if(UIManager.Instance == null){
+            UIManager.Instance = this;
+        }else{
+            this.destroy();
+        }
+    }
+
+    Init(){
+        this.NodePool = {};
+    }
+
+    UIGet(name : string): Node{
+        if(this.NodePool[name] != null && this.NodePool[name].length > 0){
+            var node = this.NodePool[name].pop();
+            return node;
+        }
+        return null;
+    }
+
+
+    UIPut(node: Node,name: string){
+        if(this.NodePool[name] == null){
+            this.NodePool[name] = [];
+        }
+        this.NodePool[name].push(node);
+    }
+}
+
+
+
+
+## 标题: assets/FrameWork/core/UIRoot.ts
+内容:
+import { _decorator, Component, instantiate, Node, Prefab } from 'cc';
+import { UIManager } from './UIManager';
+import { ResMgr } from './ResMgr';
+
+
+/**
+ * 统一管理弹窗层级
+ * */
+
+export class UIRoot extends Component {
+    public static Instance : UIRoot = null;
+
+    private uiRoot: Node = null;
+
+    protected onLoad(): void{
+        if(UIRoot.Instance == null){
+            UIRoot.Instance = this;
+        }else{
+            this.destroy();
+        }
+
+    }
+    Init(){
+        this.uiRoot = this.node.getChildByName("Root");
+    }
+
+    /**
+     * @param name : 界面名称，必须和资源名一致
+     */
+    async EnterUIByName(name : string) : Promise<Node>{
+        const existNode = this.uiRoot.getChildByName(name);
+        if(existNode != null){
+            return existNode;
+        }
+
+        var node = UIManager.Instance.UIGet(name);
+        if(node != null){
+            this.uiRoot.addChild(node);
+            return node;
+        }
+        var prefab = await ResMgr.Instance.GetAsset("GUI",name,Prefab) as Prefab;
+        var node = instantiate(prefab) as Node;
+        node.name = name;
+        this.uiRoot.addChild(node);
+
+        return node;
+    }
+
+    ExitUIByName(name : string){
+        var node = this.uiRoot.getChildByName(name);
+        if(node != null){
+            UIManager.Instance.UIPut(node,name);
+            node.removeFromParent();
+        }
+    }
+}
+
+
+
+
+## 标题: assets/Game/AssetPackage/CONFIG/ui_config.json
+内容:
+{
+    "MainUI": [
+        {
+            "id": "1",
+            "buttonNodeName" : "Button",
+            "eventMainType": "EventType.UI",
+            "eventSubType": "UIType.MainUI",
+            "payload": "这是MainUI的按钮，按下唤起PopupUI",
+            "targetUI": "PopupUI"
+        }
+    ],
+    "PopupUI": [
+        {
+            "id": "1",
+            "buttonNodeName" : "Button",
+            "eventMainType": "EventType.UI",
+            "eventSubType": "UIType.PopupUI",
+            "payload": "这是PopupUI的按钮，按下关闭PopupUI",
+            "targetUI": "PopupUI"
+        }
+    ]
+}
+
+## 标题: assets/Game/scripts/constant/constant.ts
+内容:
+import { _decorator, Component, Node } from 'cc';
+
+export enum Bundle{
+    Gui = "GUI",
+    Config = "CONFIG"
+}
+
+export enum Config{
+    UIConfig = "ui_config"
+}
+
+export enum Gui{
+    MainUI = "MainUI",
+    PopupUI = "PopupUI"
+}
+
+export enum EventType{
+    UI    
+}
+
+export enum UIType{
+    MainUI,
+    PopupUI
+}
+
+
+
+
+## 标题: assets/Game/scripts/game/GameEntry.ts
+内容:
+import { _decorator, Component, instantiate, Node, Prefab } from 'cc';
+import { ResMgr } from 'db://assets/FrameWork/core/ResMgr';
+import { UIManager } from 'db://assets/FrameWork/core/UIManager';
+import { UIRoot } from 'db://assets/FrameWork/core/UIRoot';
+import { MainUI } from '../ui/MainUI';
+import { EventBus } from 'db://assets/FrameWork/core/EventBus';
+import { Bundle, EventType, Gui, UIType } from '../constant/constant';
+import { PopupUI } from '../ui/PopupUI';
+
+
+export class GameEntry extends Component {
+
+    public static Instance : GameEntry = null;
+
+    protected onLoad(): void{
+        if(GameEntry.Instance == null){
+            GameEntry.Instance = this;
+        }
+        else{
+            this.destroy();
+        }
+        EventBus.Instance.AddEventListener(EventType.UI,this.OnUIEvent,this);
+    }
+
+    protected onDestroy(): void{
+        EventBus.Instance.RemoveEventListener(EventType.UI,this.OnUIEvent,this);
+    }
+
+    async EnterGame(){
+        var node = await UIRoot.Instance.EnterUIByName("MainUI");
+        if(node.getComponent(MainUI) == null){
+            node.addComponent(MainUI);
+        }
+    }
+    
+
+    async OnUIEvent(mainType: number,subType: number,udata: any){
+        switch(subType){
+            case UIType.MainUI:
+                await this.EnterPopupUI(udata);
+                break;
+            case UIType.PopupUI:
+                await this.ExitPopupUI(udata);
+                break;
+        }
+    }
+
+    async EnterPopupUI(udata : any){
+        var node = await UIRoot.Instance.EnterUIByName("PopupUI");
+        if(node.getComponent(PopupUI) == null){
+            node.addComponent(PopupUI);
+        }
+    }
+
+    async ExitPopupUI(udata : any){
+        UIRoot.Instance.ExitUIByName("PopupUI");
+    }
+}
+
+
+
+
+## 标题: assets/Game/scripts/ui/MainUI.ts
+内容:
+import { _decorator, Component, Node } from 'cc';
+import { EventBus } from 'db://assets/FrameWork/core/EventBus';
+import { EventType, UIType } from '../constant/constant';
+import { ConfigMgr } from 'db://assets/FrameWork/core/ConfigMgr';
+import { LogMgr } from 'db://assets/FrameWork/core/LogMgr';
+
+export class MainUI extends Component {
+    protected onLoad(): void {
+        ConfigMgr.Instance.AddButtonEventByConfig(this.node);
+    }
+}
+
+
+
+
+## 标题: assets/Game/scripts/ui/PopupUI.ts
+内容:
+import { _decorator, Component, Label, Node } from 'cc';
+import { EventType, UIType } from '../constant/constant';
+import { EventBus } from 'db://assets/FrameWork/core/EventBus';
+import { UIManager } from 'db://assets/FrameWork/core/UIManager';
+import { UIRoot } from 'db://assets/FrameWork/core/UIRoot';
+import { ConfigMgr } from 'db://assets/FrameWork/core/ConfigMgr';
+
+export class PopupUI extends Component {
+    protected onLoad(): void {
+        ConfigMgr.Instance.AddButtonEventByConfig(this.node);
+    }
+
+    
+}
+
+
+

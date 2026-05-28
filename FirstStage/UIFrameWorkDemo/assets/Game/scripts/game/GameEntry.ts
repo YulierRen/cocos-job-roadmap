@@ -4,7 +4,7 @@ import { UIManager } from 'db://assets/FrameWork/core/UIManager';
 import { UIRoot } from 'db://assets/FrameWork/core/UIRoot';
 import { MainUI } from '../ui/MainUI';
 import { EventBus } from 'db://assets/FrameWork/core/EventBus';
-import { EventType, UIType } from '../constant/constant';
+import { Bundle, EventType, Gui, UIType } from '../constant/constant';
 import { PopupUI } from '../ui/PopupUI';
 
 
@@ -22,35 +22,38 @@ export class GameEntry extends Component {
         EventBus.Instance.AddEventListener(EventType.UI,this.OnUIEvent,this);
     }
 
+    protected onDestroy(): void{
+        EventBus.Instance.RemoveEventListener(EventType.UI,this.OnUIEvent,this);
+    }
+
     async EnterGame(){
-        var prefab = await ResMgr.Instance.GetAsset("GUI","MainUI",Prefab);
-        var node = instantiate(prefab) as Node;
-        node.addComponent(MainUI);
-        UIRoot.Instance.EnterUI(node);
+        var node = await UIRoot.Instance.EnterUIByName("MainUI");
+        if(node.getComponent(MainUI) == null){
+            node.addComponent(MainUI);
+        }
     }
     
 
-    OnUIEvent(mainType: number,subType: number,udata: any){
+    async OnUIEvent(mainType: number,subType: number,udata: any){
         switch(subType){
+            case UIType.MainUI:
+                await this.EnterPopupUI(udata);
+                break;
             case UIType.PopupUI:
-                console.log("OnUIEvent PopupUI");
-                this.EnterPopupUI(udata);
+                await this.ExitPopupUI(udata);
+                break;
         }
     }
 
     async EnterPopupUI(udata : any){
-
-        var pooledNode = UIManager.Instance.UIGet("PopupUI");
-        if(pooledNode != null){
-            console.log("从对象池里拿");
-            UIRoot.Instance.EnterUI(pooledNode);
-            return;
-        }else{
-            var prefab = await ResMgr.Instance.GetAsset("GUI","PopupUI",Prefab) as Prefab;
-            var node = instantiate(prefab) as Node;
-            node.addComponent(PopupUI).Init(udata);
-            UIRoot.Instance.EnterUI(node);
+        var node = await UIRoot.Instance.EnterUIByName("PopupUI");
+        if(node.getComponent(PopupUI) == null){
+            node.addComponent(PopupUI);
         }
+    }
+
+    async ExitPopupUI(udata : any){
+        UIRoot.Instance.ExitUIByName("PopupUI");
     }
 }
 

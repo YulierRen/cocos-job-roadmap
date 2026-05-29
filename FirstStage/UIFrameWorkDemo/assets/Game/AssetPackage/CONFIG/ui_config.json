@@ -4,9 +4,19 @@
             "id": "1",
             "buttonNodeName" : "Button",
             "eventMainType": "EventType.UI",
-            "eventSubType": "UIType.MainUI",
-            "payload": "这是MainUI的按钮，按下唤起PopupUI",
-            "targetUI": "PopupUI"
+            "eventSubType": "UIType.OpenPopup",
+            "payload": "Popup1",
+            "targetUI": "PopupUI",
+            "canMultiOpen": false
+        },
+        {
+            "id": "2",
+            "buttonNodeName" : "Button-001",
+            "eventMainType": "EventType.UI",
+            "eventSubType": "UIType.OpenPopup",
+            "payload": "Popup2",
+            "targetUI": "PopupUI",
+            "canMultiOpen": false
         }
     ],
     "PopupUI": [
@@ -14,9 +24,10 @@
             "id": "1",
             "buttonNodeName" : "Button",
             "eventMainType": "EventType.UI",
-            "eventSubType": "UIType.PopupUI",
-            "payload": "这是PopupUI的按钮，按下关闭PopupUI",
-            "targetUI": "PopupUI"
+            "eventSubType": "UIType.ClosePopup",
+            "payload": null,
+            "targetUI": "PopupUI",
+            "canMultiOpen": false
         }
     ]
 }

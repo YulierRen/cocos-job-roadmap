@@ -3,6 +3,7 @@ import { ResMgr } from './ResMgr';
 import { Bundle, Config, EventType, UIType } from '../../Game/scripts/constant/constant';
 import { LogMgr } from './LogMgr';
 import { EventBus } from './EventBus';
+import { UIOpenParams } from './Types';
 
 
 export class ConfigData{
@@ -11,10 +12,12 @@ export class ConfigData{
     eventSubType: UIType;
     payload: string;
     targetUI: string;
+    canMultiOpen: boolean;
 }
 
 export class ConfigMgr extends Component {
     public static Instance : ConfigMgr = null;
+    private uiConfigCache: any = null;
 
     protected onLoad(): void{
         if(ConfigMgr.Instance == null){
@@ -24,6 +27,7 @@ export class ConfigMgr extends Component {
             this.destroy();
             return;
         }
+        this.loadConfig();
     }
 
     Init(){
@@ -37,36 +41,46 @@ export class ConfigMgr extends Component {
 
     async AddButtonEventByConfig(node: Node){
         var config = await ConfigMgr.Instance.getAllButtonConfigs(node.name);
-        console.log("MainUI loadButton config",config);
+        
+        if(!config){
+            return;
+        }
         config.forEach(item =>{
             var buttonNode = node.getChildByName(item.buttonNodeName);
+            var uiOpenParams: UIOpenParams = {
+                uiName: item.targetUI,
+                payload: item.payload,
+                source: item.buttonNodeName,
+                timestamp: Date.now(),
+                canMultiOpen: item.canMultiOpen
+            };
             if(buttonNode != null){
-                this.AddButtonEvent(buttonNode,item.eventMainType,item.eventSubType,item.payload);
+                this.AddButtonEvent(buttonNode,item.eventMainType,item.eventSubType,uiOpenParams);
+                
             }else{
                 console.log(`MainUI loadButton buttonNode ${item.buttonNodeName} not found`);
             }
         })
     }
-    AddButtonEvent(node: Node, eventMainType: EventType, eventSubType: UIType, payload: string){
+    AddButtonEvent(node: Node, eventMainType: EventType, eventSubType: UIType, udata: UIOpenParams){
         if((node as any).__configClickBound){
             return;
         }
         (node as any).__configClickBound = true;
 
         node.on(Node.EventType.TOUCH_END,()=>{
-            console.log(node.name,eventMainType,eventSubType,payload);
-            EventBus.Instance.Emit(eventMainType, eventSubType, payload);
+            EventBus.Instance.Emit(eventMainType, eventSubType, udata);
         })
     }
 
     
     async getAllButtonConfigs(UIName: string) : Promise<ConfigData[] | null> {
-        var config = await ResMgr.Instance.GetAsset(Bundle.Config,Config.UIConfig,JsonAsset) as JsonAsset;
-        if(config == null){
-            LogMgr.Warn("ConfigMgr getAllButtonConfigs config is null");
+        const configData = await this.getUIConfigData();
+        if(configData == null){
+            LogMgr.Warn("ConfigMgr getAllButtonConfigs configData is null");
             return null;
         }
-        const configData = config.json;
+
         if(configData[UIName] == null){
             LogMgr.Warn(`ConfigMgr getAllButtonConfigs UIName ${UIName} not found`);
             return null;
@@ -80,6 +94,7 @@ export class ConfigMgr extends Component {
             configDataObj.eventSubType = this.parseEnumValue(item.eventSubType, 'UIType', UIType) as UIType;
             configDataObj.payload = item.payload;
             configDataObj.targetUI = item.targetUI;
+            configDataObj.canMultiOpen = item.canMultiOpen;
             return configDataObj;
         });
 
@@ -88,12 +103,12 @@ export class ConfigMgr extends Component {
     }
 
     async getConfigByButtonName(UIName: string, buttonNodeName: string) : Promise<ConfigData | null> {
-        var config = await ResMgr.Instance.GetAsset(Bundle.Config,Config.UIConfig,JsonAsset) as JsonAsset;
-        if(config == null){
-            LogMgr.Warn("ConfigMgr getConfigByButtonName config is null");
+        const configData = await this.getUIConfigData();
+        if(configData == null){
+            LogMgr.Warn("ConfigMgr getConfigByButtonName configData is null");
             return null;
         }
-        const configData = config.json;
+
         if(configData[UIName] == null){
             LogMgr.Warn(`ConfigMgr getConfigByButtonName UIName ${UIName} not found`);
             return null;
@@ -113,19 +128,19 @@ export class ConfigMgr extends Component {
         configDataObj.eventSubType = this.parseEnumValue(result.eventSubType, 'UIType', UIType) as UIType;
         configDataObj.payload = result.payload;
         configDataObj.targetUI = result.targetUI;
+        configDataObj.canMultiOpen = result.canMultiOpen;
         
         return configDataObj;
     }
 
     async getConfigById(UIName: string, id: string) : Promise<ConfigData | null> {
         // 这里可以根据UIName和id从配置中获取对应的配置项
-        var config = await ResMgr.Instance.GetAsset(Bundle.Config,Config.UIConfig,JsonAsset) as JsonAsset;
-        if(config == null){
-            LogMgr.Warn("ConfigMgr getConfigById config is null");
+        const configData = await this.getUIConfigData();
+        if(configData == null){
+            LogMgr.Warn("ConfigMgr getConfigById configData is null");
             return null;
         }
-        
-        const configData = config.json;
+
         if(configData[UIName] == null){
             LogMgr.Warn(`ConfigMgr getConfigById UIName ${UIName} not found`);
             return null;
@@ -145,13 +160,29 @@ export class ConfigMgr extends Component {
         configDataObj.eventSubType = this.parseEnumValue(result.eventSubType, 'UIType', UIType) as UIType;
         configDataObj.payload = result.payload;
         configDataObj.targetUI = result.targetUI;
+        configDataObj.canMultiOpen = result.canMultiOpen;
         
         return configDataObj;
     }
 
     //加载并缓存bundle中的配置文件
     async loadConfig(){
-        await ResMgr.Instance.GetAsset(Bundle.Config,Config.UIConfig,JsonAsset)
+        await this.getUIConfigData();
+    }
+
+    private async getUIConfigData(): Promise<any | null> {
+        if (this.uiConfigCache != null) {
+            return this.uiConfigCache;
+        }
+
+        const config = await ResMgr.Instance.GetAsset(Bundle.Config, Config.UIConfig, JsonAsset) as JsonAsset;
+        if (config == null) {
+            LogMgr.Warn("ConfigMgr getUIConfigData config is null");
+            return null;
+        }
+
+        this.uiConfigCache = config.json;
+        return this.uiConfigCache;
     }
 
     // 把字符串转成Constant的底层number。

@@ -1,4 +1,5 @@
 import { _decorator, Component, Node } from 'cc';
+import { UIOpenParams } from './Types';
 
 export class EventBus extends Component {
     //全局单例的事件总线工具
@@ -35,7 +36,7 @@ export class EventBus extends Component {
         }
     }
 
-    Emit(mainType: number, subType: number, udata: any){
+    Emit(mainType: number, subType: number, udata: UIOpenParams){
         if(this.eventMap[mainType] != null){
             for(var i = 0; i < this.eventMap[mainType].length; i++){
                 if(this.eventMap[mainType][i].callback != null){

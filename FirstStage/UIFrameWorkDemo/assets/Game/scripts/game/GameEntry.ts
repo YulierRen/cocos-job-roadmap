@@ -6,6 +6,8 @@ import { MainUI } from '../ui/MainUI';
 import { EventBus } from 'db://assets/FrameWork/core/EventBus';
 import { Bundle, EventType, Gui, UIType } from '../constant/constant';
 import { PopupUI } from '../ui/PopupUI';
+import { UIOpenParams } from 'db://assets/FrameWork/core/Types';
+import { UIRouter } from 'db://assets/FrameWork/core/UIRouter';
 
 
 export class GameEntry extends Component {
@@ -27,33 +29,35 @@ export class GameEntry extends Component {
     }
 
     async EnterGame(){
-        var node = await UIRoot.Instance.EnterUIByName("MainUI");
+        var node = await UIRoot.Instance.EnterUIByName_Singular("MainUI");
         if(node.getComponent(MainUI) == null){
             node.addComponent(MainUI);
         }
     }
     
 
-    async OnUIEvent(mainType: number,subType: number,udata: any){
+    async OnUIEvent(mainType: number,subType: number,udata: UIOpenParams){
         switch(subType){
-            case UIType.MainUI:
-                await this.EnterPopupUI(udata);
+            case UIType.OpenPopup:
+                console.log("调用了OnUIEvent",udata.canMultiOpen);
+                await this.EnterUI(udata);
                 break;
-            case UIType.PopupUI:
-                await this.ExitPopupUI(udata);
+            case UIType.ClosePopup:
+                console.log("调用了OnUIEvent",udata.canMultiOpen);
+                await this.ExitUI(udata);
                 break;
         }
     }
 
-    async EnterPopupUI(udata : any){
-        var node = await UIRoot.Instance.EnterUIByName("PopupUI");
-        if(node.getComponent(PopupUI) == null){
-            node.addComponent(PopupUI);
-        }
+    async EnterUI(udata : UIOpenParams){
+        UIRouter.Instance.open(udata);
+        
     }
 
-    async ExitPopupUI(udata : any){
-        UIRoot.Instance.ExitUIByName("PopupUI");
+    async ExitUI(udata : UIOpenParams){
+        console.log("调用了ExitUI",udata.canMultiOpen);
+        UIRouter.Instance.close(udata);
+        
     }
 }
 

@@ -5,6 +5,7 @@ import { UIManager } from '../FrameWork/core/UIManager';
 import { EventBus } from '../FrameWork/core/EventBus';
 import { ResMgr } from '../FrameWork/core/ResMgr';
 import { ConfigMgr } from '../FrameWork/core/ConfigMgr';
+import { UIRouter } from '../FrameWork/core/UIRouter';
 const { ccclass, property } = _decorator;
 
 @ccclass('Boot')
@@ -48,11 +49,14 @@ export class Boot extends Component {
         this.node.addComponent(ConfigMgr).Init();
 
         //层级管理器
-        console.log("UIRoot Init",this.node.getChildByName("Root"));
+
         this.node.addComponent(UIRoot).Init();
 
         //界面管理器
         this.node.addComponent(UIManager).Init();
+
+        //界面路由业务管理
+        this.node.addComponent(UIRouter).Init();
 
 
         //游戏入口

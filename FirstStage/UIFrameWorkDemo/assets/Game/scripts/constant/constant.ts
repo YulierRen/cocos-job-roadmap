@@ -19,8 +19,8 @@ export enum EventType{
 }
 
 export enum UIType{
-    MainUI,
-    PopupUI
+    OpenPopup,
+    ClosePopup
 }
 
 

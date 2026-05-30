@@ -7,7 +7,7 @@
             "eventSubType": "UIType.OpenPopup",
             "payload": "Popup1",
             "targetUI": "PopupUI",
-            "canMultiOpen": false
+            "canMultiOpen": true
         },
         {
             "id": "2",
@@ -16,7 +16,16 @@
             "eventSubType": "UIType.OpenPopup",
             "payload": "Popup2",
             "targetUI": "PopupUI",
-            "canMultiOpen": false
+            "canMultiOpen": true
+        },
+        {
+            "id": "3",
+            "buttonNodeName" : "SendTipsButton",
+            "eventMainType": "EventType.UI",
+            "eventSubType": "UIType.SendTips",
+            "payload": "发送的Tips",
+            "targetUI": "TipsUI",
+            "canMultiOpen": true
         }
     ],
     "PopupUI": [
@@ -27,7 +36,18 @@
             "eventSubType": "UIType.ClosePopup",
             "payload": null,
             "targetUI": "PopupUI",
-            "canMultiOpen": false
+            "canMultiOpen": true
+        }
+    ],
+    "TipsUI": [
+        {
+            "id": null,
+            "buttonNodeName" : null,
+            "eventMainType": null,
+            "eventSubType": null,
+            "payload": null,
+            "targetUI": null,
+            "canMultiOpen": true
         }
     ]
 }

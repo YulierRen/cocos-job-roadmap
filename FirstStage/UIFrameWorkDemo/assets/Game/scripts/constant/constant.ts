@@ -20,7 +20,8 @@ export enum EventType{
 
 export enum UIType{
     OpenPopup,
-    ClosePopup
+    ClosePopup,
+    SendTips
 }
 
 

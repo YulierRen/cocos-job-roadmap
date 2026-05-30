@@ -1,63 +1,54 @@
-import { _decorator, Component, instantiate, Node, Prefab } from 'cc';
-import { ResMgr } from './ResMgr';
-import { Bundle } from '../../Game/scripts/constant/constant';
+import {_decorator, Component, Node} from 'cc';
+import {ObjectPool} from './ObjectPool';
+import {UIFactory} from './UIFactory';
 
+/**
+ * 多个复合页面，但是不高频显示
+ */
 export class UIManager extends Component {
+    public static Instance: UIManager = null;
 
-    public static Instance : UIManager = null;
-
-    private NodePool: any = {};
     private openUIStack: any = {};
 
-
-
-    protected onLoad(): void{
-        if(UIManager.Instance == null){
+    protected onLoad(): void {
+        if (UIManager.Instance == null) {
             UIManager.Instance = this;
-        }else{
+        } else {
             this.destroy();
         }
     }
 
-    Init(){
-        this.NodePool = {};
+    Init() {
         this.openUIStack = {};
-
+        ObjectPool.Instance?.Init();
     }
 
-    async UIGet(name : string): Promise<Node>{
-        if(this.NodePool[name] != null && this.NodePool[name].length > 0){
-            const node = this.NodePool[name].pop();
-            return node;
+    async UIGet(name: string): Promise<Node> {
+        const poolNode = ObjectPool.Instance?.Get(name);
+        if (poolNode != null) {
+            return poolNode;
         }
 
-        const prefab = await ResMgr.Instance.GetAsset(Bundle.Gui,name,Prefab) as Prefab;
-        const node = instantiate(prefab) as Node;
-        node.name = name;
-        return node;
+        return await UIFactory.Instance.CreateUI(name);
     }
 
-    UIPut(node: Node,name: string){
-        if(this.NodePool[name] == null){
-            this.NodePool[name] = [];
-        }
-        this.NodePool[name].push(node);
+    UIPut(node: Node, name: string) {
+        ObjectPool.Instance?.Put(node, name);
     }
 
     async pushOpenUI(name: string): Promise<Node> {
-        
-        if(this.openUIStack[name] == null){
+        if (this.openUIStack[name] == null) {
             this.openUIStack[name] = [];
         }
         const node = await this.UIGet(name);
-        
+
         this.openUIStack[name].push(node);
         return node;
     }
 
-    popOpenUI(node: Node,name: string): void{
+    popOpenUI(node: Node, name: string): void {
         const popName = this.openUIStack[name].pop();
-        if(popName != null){
+        if (popName != null) {
             this.UIPut(node, name);
         }
     }
@@ -69,5 +60,3 @@ export class UIManager extends Component {
         return this.openUIStack[name][this.openUIStack[name].length - 1];
     }
 }
-
-

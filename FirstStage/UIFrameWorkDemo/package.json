@@ -1,7 +1,16 @@
 {
-  "name": "UIFrameWorkDemo",
+  "name": "uiframeworkdemo",
   "uuid": "456201da-6ebf-4ec2-8878-1cc457bb2b7c",
   "creator": {
     "version": "3.8.0"
+  },
+  "prettier": {
+    "printWidth": 180,
+    "tabWidth": 4,
+    "semi": true,
+    "singleQuote": true,
+    "bracketSpacing": false,
+    "endOfLine": "auto",
+    "trailingComma": "none"
   }
 }

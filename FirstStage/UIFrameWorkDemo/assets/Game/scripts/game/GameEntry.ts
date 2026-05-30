@@ -46,18 +46,18 @@ export class GameEntry extends Component {
                 console.log("调用了OnUIEvent",udata.canMultiOpen);
                 await this.ExitUI(udata);
                 break;
+            case UIType.SendTips:
+                console.log("调用了OnUIEvent",udata.canMultiOpen);
+                await this.EnterUI(udata);
+                break;
         }
     }
-
     async EnterUI(udata : UIOpenParams){
         UIRouter.Instance.open(udata);
-        
     }
 
     async ExitUI(udata : UIOpenParams){
-        console.log("调用了ExitUI",udata.canMultiOpen);
         UIRouter.Instance.close(udata);
-        
     }
 }
 

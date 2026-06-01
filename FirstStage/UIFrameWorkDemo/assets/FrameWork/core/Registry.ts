@@ -1,8 +1,8 @@
-import { _decorator, Component, Node } from 'cc';
-import { MainUI } from '../../Game/scripts/ui/MainUI';
-import { PopupUI } from '../../Game/scripts/ui/PopupUI';
-import { TipsUI } from '../../Game/scripts/ui/TipsUI';
-const { ccclass, property } = _decorator;
+import {_decorator, Component, Node} from 'cc';
+import {MainUI} from '../../Game/scripts/ui/MainUI';
+import {PopupUI} from '../../Game/scripts/ui/PopupUI';
+import {TipsUI} from '../../Game/scripts/ui/TipsUI';
+const {ccclass, property} = _decorator;
 
 type Ctor<T> = new (...args: any[]) => T;
 
@@ -10,14 +10,14 @@ export class Registry extends Component {
     public static Instance: Registry = null;
 
     protected onLoad(): void {
-        if(Registry.Instance === null){
+        if (Registry.Instance === null) {
             Registry.Instance = this;
-        }else{
+        } else {
             this.destroy();
             return;
         }
     }
-    private map = new Map<string,Ctor<Component>>();
+    private map = new Map<string, Ctor<Component>>();
 
     register(name: string, ctor: Ctor<Component>) {
         this.map.set(name, ctor);
@@ -27,12 +27,9 @@ export class Registry extends Component {
         return this.map.get(name);
     }
 
-    Init(){
-        Registry.Instance.register("MainUI",MainUI);
-        Registry.Instance.register("PopupUI",PopupUI);
-        Registry.Instance.register("TipsUI",TipsUI);
+    Init() {
+        Registry.Instance.register('MainUI', MainUI);
+        Registry.Instance.register('PopupUI', PopupUI);
+        Registry.Instance.register('TipsUI', TipsUI);
     }
-
 }
-
-

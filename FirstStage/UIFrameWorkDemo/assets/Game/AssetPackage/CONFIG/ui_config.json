@@ -2,7 +2,7 @@
     "MainUI": [
         {
             "id": "1",
-            "buttonNodeName" : "Button",
+            "buttonNodeName": "Button",
             "eventMainType": "EventType.UI",
             "eventSubType": "UIType.OpenPopup",
             "payload": "Popup1",
@@ -11,7 +11,7 @@
         },
         {
             "id": "2",
-            "buttonNodeName" : "Button-001",
+            "buttonNodeName": "Button-001",
             "eventMainType": "EventType.UI",
             "eventSubType": "UIType.OpenPopup",
             "payload": "Popup2",
@@ -20,18 +20,27 @@
         },
         {
             "id": "3",
-            "buttonNodeName" : "SendTipsButton",
+            "buttonNodeName": "SendTipsButton",
             "eventMainType": "EventType.UI",
             "eventSubType": "UIType.SendTips",
             "payload": "发送的Tips",
             "targetUI": "TipsUI",
             "canMultiOpen": true
+        },
+        {
+            "id": "4",
+            "buttonNodeName": "WebConnect",
+            "eventMainType": "EventType.WS",
+            "eventSubType": "WSType.Connect",
+            "payload": null,
+            "targetUI": null,
+            "canMultiOpen": null
         }
     ],
     "PopupUI": [
         {
             "id": "1",
-            "buttonNodeName" : "Button",
+            "buttonNodeName": "Button",
             "eventMainType": "EventType.UI",
             "eventSubType": "UIType.ClosePopup",
             "payload": null,
@@ -42,7 +51,7 @@
     "TipsUI": [
         {
             "id": null,
-            "buttonNodeName" : null,
+            "buttonNodeName": null,
             "eventMainType": null,
             "eventSubType": null,
             "payload": null,

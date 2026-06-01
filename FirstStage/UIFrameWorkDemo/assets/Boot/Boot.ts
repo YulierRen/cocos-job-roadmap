@@ -1,19 +1,21 @@
-import { _decorator, Component, director, Node } from 'cc';
-import { GameEntry } from '../Game/scripts/game/GameEntry';
-import { UIRoot } from '../FrameWork/core/UIRoot';
-import { UIManager } from '../FrameWork/core/UIManager';
-import { EventBus } from '../FrameWork/core/EventBus';
-import { ResMgr } from '../FrameWork/core/ResMgr';
-import { ConfigMgr } from '../FrameWork/core/ConfigMgr';
-import { UIRouter } from '../FrameWork/core/UIRouter';
-import { Registry } from '../FrameWork/core/Registry';
-import { UIFactory } from '../FrameWork/core/UIFactory';
-import { ObjectPool } from '../FrameWork/core/ObjectPool';
-const { ccclass, property } = _decorator;
+import {_decorator, Component, director, Node} from 'cc';
+import {GameEntry} from '../Game/scripts/game/GameEntry';
+import {UIRoot} from '../FrameWork/core/UIRoot';
+import {UIManager} from '../FrameWork/core/UIManager';
+import {EventBus} from '../FrameWork/core/EventBus';
+import {ResMgr} from '../FrameWork/core/ResMgr';
+import {ConfigMgr} from '../FrameWork/core/ConfigMgr';
+import {UIRouter} from '../FrameWork/core/UIRouter';
+import {Registry} from '../FrameWork/core/Registry';
+import {UIFactory} from '../FrameWork/core/UIFactory';
+import {ObjectPool} from '../FrameWork/core/ObjectPool';
+import {NetMgr} from '../FrameWork/core/NetMgr';
+import {LogMgr} from '../FrameWork/core/LogMgr';
+const {ccclass, property} = _decorator;
 
 @ccclass('Boot')
 export class Boot extends Component {
-    public static Instance : Boot = null;
+    public static Instance: Boot = null;
 
     private getPersistTarget(): Node {
         const scene = director.getScene();
@@ -27,21 +29,21 @@ export class Boot extends Component {
     }
 
     protected onLoad(): void {
-        if(Boot.Instance == null){
+        if (Boot.Instance == null) {
             Boot.Instance = this;
-        }else{
+        } else {
             this.destroy();
             return;
         }
-        
+
         director.addPersistRootNode(this.getPersistTarget());
-        
+
         this.FrameWorkInit();
-        
-        
     }
 
-    FrameWorkInit(){
+    FrameWorkInit() {
+        //日志管理器
+        this.node.addComponent(LogMgr).Init();
         //事件总线
         this.node.addComponent(EventBus).Init();
         //资源管理器
@@ -60,10 +62,9 @@ export class Boot extends Component {
         this.node.addComponent(UIManager).Init();
         //界面路由业务管理
         this.node.addComponent(UIRouter).Init();
+        //WebSocket管理器
+        this.node.addComponent(NetMgr).Init();
         //游戏入口
         this.node.addComponent(GameEntry).EnterGame();
-
     }
 }
-
-

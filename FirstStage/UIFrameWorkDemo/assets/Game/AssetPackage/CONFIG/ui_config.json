@@ -34,7 +34,7 @@
             "eventSubType": "WSType.Connect",
             "payload": null,
             "targetUI": null,
-            "canMultiOpen": null
+            "canMultiOpen": false
         }
     ],
     "PopupUI": [

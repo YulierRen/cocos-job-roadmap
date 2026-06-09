@@ -64,7 +64,7 @@ export class GameEntry extends Component {
         switch (subType) {
             case WSType.Connect:
                 console.log('调用了OnWSEvent');
-                this.ConnectWS();
+                await this.ConnectWS();
                 break;
         }
     }
@@ -78,5 +78,15 @@ export class GameEntry extends Component {
             console.log('注册了Net');
         }
         NetMgr.Instance.connect(netKey, 'ws://localhost:8080');
+        await client.waitForOpen();
+        NetMgr.Instance.onMessage(netKey, 'echo', (msg) => {
+            console.log('Received echo message:', msg);
+        });
+        try {
+            const response = await NetMgr.Instance.request(netKey, 'echo', {msg: 'Hello WebSocket'});
+            console.log('Received response:', response);
+        } catch (error) {
+            console.error('Request error:', error);
+        }
     }
 }

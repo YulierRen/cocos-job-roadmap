@@ -9,7 +9,7 @@ import {UIRouter} from '../FrameWork/core/UIRouter';
 import {Registry} from '../FrameWork/core/Registry';
 import {UIFactory} from '../FrameWork/core/UIFactory';
 import {ObjectPool} from '../FrameWork/core/ObjectPool';
-import {NetMgr} from '../FrameWork/core/NetMgr';
+import {NetMgr} from '../FrameWork/core/Net/NetMgr';
 import {LogMgr} from '../FrameWork/core/LogMgr';
 const {ccclass, property} = _decorator;
 

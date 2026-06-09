@@ -1,6 +1,5 @@
 import {Component} from 'cc';
 import {LogMgr} from '../LogMgr';
-import {Client} from './Client';
 
 export enum NetUrl {
     url = 'ws://localhost:8080'
@@ -10,13 +9,15 @@ export interface NetPacket {
     cmd: string;
     data?: any;
     seq?: number;
+    code?: number;
 }
 
 export interface INet {
     connect(url: string): void;
     close(): void;
-    send(msg: unknown): void;
+    send(msg: NetPacket): void;
     onMessage(cmd: string, cb: (msg: any) => void): void;
+    request(cmd: string, data?: any): Promise<NetPacket>;
 }
 export class NetMgr extends Component {
     Init() {}
@@ -76,7 +77,7 @@ export class NetMgr extends Component {
         net.connect(url);
     }
 
-    send(key: string, msg: unknown): void {
+    send(key: string, msg: NetPacket): void {
         const net = this.nets.get(key);
         if (!net) {
             LogMgr.Warn(`send canceled: net not found for key ${key}`);
@@ -104,5 +105,14 @@ export class NetMgr extends Component {
         }
 
         net.onMessage(cmd, cb);
+    }
+
+    request(key: string, cmd: string, data?: any): Promise<NetPacket> {
+        const net = this.nets.get(key);
+        if (!net) {
+            LogMgr.Warn(`request canceled: net not found for key ${key}`);
+            return Promise.reject(new Error(`net not found for key ${key}`));
+        }
+        return net.request(cmd, data);
     }
 }

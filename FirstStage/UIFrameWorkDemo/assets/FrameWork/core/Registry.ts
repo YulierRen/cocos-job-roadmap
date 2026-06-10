@@ -2,6 +2,9 @@ import {_decorator, Component, Node} from 'cc';
 import {MainUI} from '../../Game/scripts/ui/MainUI';
 import {PopupUI} from '../../Game/scripts/ui/PopupUI';
 import {TipsUI} from '../../Game/scripts/ui/TipsUI';
+import {BagPanel} from '../../Game/scripts/Bag/controller/BagPanel';
+import {BagItemCell} from '../../Game/scripts/Bag/controller/BagItemCell';
+import {ItemDetailPanel} from '../../Game/scripts/Bag/controller/ItemDetailPanel';
 const {ccclass, property} = _decorator;
 
 type Ctor<T> = new (...args: any[]) => T;
@@ -31,5 +34,9 @@ export class Registry extends Component {
         Registry.Instance.register('MainUI', MainUI);
         Registry.Instance.register('PopupUI', PopupUI);
         Registry.Instance.register('TipsUI', TipsUI);
+
+        Registry.Instance.register('BagPanel', BagPanel);
+        Registry.Instance.register('BagItemCell', BagItemCell);
+        Registry.Instance.register('ItemDetailPanel', ItemDetailPanel);
     }
 }

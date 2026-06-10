@@ -6,7 +6,8 @@ export enum Bundle {
 }
 
 export enum Config {
-    UIConfig = 'ui_config'
+    UIConfig = 'ui_config',
+    BagItemConfig = 'bag_item_config'
 }
 
 export enum Gui {
@@ -16,13 +17,20 @@ export enum Gui {
 
 export enum EventType {
     UI,
-    WS
+    WS,
+    FlushBagPanel,
+    UIEvent
 }
 
 export enum UIType {
+    //通用
     OpenPopup,
     ClosePopup,
-    SendTips
+    SendTips,
+
+    //背包
+    FlushBagPanel,
+    OpenBagPanel
 }
 
 export enum WSType {

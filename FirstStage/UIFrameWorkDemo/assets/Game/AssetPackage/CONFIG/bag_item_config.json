@@ -1,0 +1,62 @@
+[
+    {
+        "id": 1001,
+        "name": "小型回血药",
+        "icon": "icons/potion_red",
+        "type": "consumable",
+        "quality": 1,
+        "maxStack": 99,
+        "sellPrice": 10,
+        "desc": "使用后恢复100点生命值"
+    },
+    {
+        "id": 1002,
+        "name": "小型回蓝药",
+        "icon": "icons/potion_blue",
+        "type": "consumable",
+        "quality": 1,
+        "maxStack": 99,
+        "sellPrice": 12,
+        "desc": "使用后恢复80点法力值"
+    },
+    {
+        "id": 2001,
+        "name": "铁剑",
+        "icon": "icons/sword_iron",
+        "type": "equipment",
+        "quality": 2,
+        "maxStack": 1,
+        "sellPrice": 100,
+        "desc": "一把普通的铁剑"
+    },
+    {
+        "id": 2002,
+        "name": "皮甲",
+        "icon": "icons/armor_leather",
+        "type": "equipment",
+        "quality": 2,
+        "maxStack": 1,
+        "sellPrice": 120,
+        "desc": "轻便的皮甲"
+    },
+    {
+        "id": 3001,
+        "name": "狼牙",
+        "icon": "icons/fang",
+        "type": "material",
+        "quality": 1,
+        "maxStack": 99,
+        "sellPrice": 5,
+        "desc": "可用于制作装备的材料"
+    },
+    {
+        "id": 4001,
+        "name": "村长的信",
+        "icon": "icons/letter",
+        "type": "quest",
+        "quality": 1,
+        "maxStack": 1,
+        "sellPrice": 0,
+        "desc": "交给守卫的任务物品"
+    }
+]

@@ -25,6 +25,10 @@ export class UIRouter extends Component {
             node = await UIRoot.Instance.EnterUIByName_Singular(params.uiName);
         }
         node.name = params.uiName;
+        if (Registry.Instance.get(params.uiName) == null) {
+            console.log(`No component registered for ${params.uiName}`);
+            return;
+        }
         if (node.getComponent(Registry.Instance.get(params.uiName)) == null) {
             node.addComponent(Registry.Instance.get(params.uiName)).Init(params);
         } else {

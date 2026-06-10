@@ -18,7 +18,7 @@ export class UIFactory extends Component {
 
     Init() {}
 
-    async CreateUI(name: string, params?: UIOpenParams): Promise<Node> {
+    async CreateUI(name: string): Promise<Node> {
         var prefab = await ResMgr.Instance.GetAsset(Bundle.Gui, name, Prefab);
         var node = instantiate(prefab) as Node;
         node.name = name;
@@ -28,7 +28,10 @@ export class UIFactory extends Component {
 
     AddComponentToNode<T extends Component>(node: Node, name: string): T {
         const ctor = Registry.Instance.get(name);
-        if (!ctor) throw new Error(`Unknown component: ${name}`);
+        if (!ctor) {
+            console.log(`No component registered for ${name}`);
+            return null;
+        }
         return node.addComponent(ctor) as T;
     }
 }

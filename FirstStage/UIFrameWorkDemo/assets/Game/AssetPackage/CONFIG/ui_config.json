@@ -35,6 +35,15 @@
             "payload": null,
             "targetUI": null,
             "canMultiOpen": false
+        },
+        {
+            "id": "5",
+            "buttonNodeName": "OpenBagPanel",
+            "eventMainType": "EventType.UI",
+            "eventSubType": "UIType.OpenBagPanel",
+            "payload": null,
+            "targetUI": "BagPanel",
+            "canMultiOpen": false
         }
     ],
     "PopupUI": [

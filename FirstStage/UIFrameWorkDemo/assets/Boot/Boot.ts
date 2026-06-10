@@ -11,6 +11,8 @@ import {UIFactory} from '../FrameWork/core/UIFactory';
 import {ObjectPool} from '../FrameWork/core/ObjectPool';
 import {NetMgr} from '../FrameWork/core/Net/NetMgr';
 import {LogMgr} from '../FrameWork/core/LogMgr';
+import {BagManager} from '../Game/scripts/Bag/model/BagManager';
+import {ItemConfigDB} from '../Game/scripts/Bag/config/ItemConfigDB';
 const {ccclass, property} = _decorator;
 
 @ccclass('Boot')
@@ -28,7 +30,7 @@ export class Boot extends Component {
         return persistTarget;
     }
 
-    protected onLoad(): void {
+    protected async onLoad(): Promise<void> {
         if (Boot.Instance == null) {
             Boot.Instance = this;
         } else {
@@ -38,10 +40,10 @@ export class Boot extends Component {
 
         director.addPersistRootNode(this.getPersistTarget());
 
-        this.FrameWorkInit();
+        await this.FrameWorkInit();
     }
 
-    FrameWorkInit() {
+    async FrameWorkInit() {
         //日志管理器
         this.node.addComponent(LogMgr).Init();
         //事件总线
@@ -64,6 +66,10 @@ export class Boot extends Component {
         this.node.addComponent(UIRouter).Init();
         //WebSocket管理器
         this.node.addComponent(NetMgr).Init();
+        //背包管理器
+        this.node.addComponent(BagManager).Init();
+        //数据初始化
+        await ItemConfigDB.Instance.Init();
         //游戏入口
         this.node.addComponent(GameEntry).EnterGame();
     }

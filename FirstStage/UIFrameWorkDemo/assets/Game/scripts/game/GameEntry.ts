@@ -50,6 +50,10 @@ export class GameEntry extends Component {
                 console.log('调用了OnUIEvent', udata.canMultiOpen);
                 await this.EnterUI(udata);
                 break;
+            case UIType.OpenBagPanel:
+                console.log('调用了OnUIEvent', udata.canMultiOpen);
+                await this.EnterUI(udata);
+                break;
         }
     }
     async EnterUI(udata: UIOpenParams) {

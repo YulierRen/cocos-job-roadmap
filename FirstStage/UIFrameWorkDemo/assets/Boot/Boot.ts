@@ -45,32 +45,30 @@ export class Boot extends Component {
 
     async FrameWorkInit() {
         //日志管理器
-        this.node.addComponent(LogMgr).Init();
+        await this.node.addComponent(LogMgr).Init();
         //事件总线
-        this.node.addComponent(EventBus).Init();
+        await this.node.addComponent(EventBus).Init();
         //资源管理器
-        this.node.addComponent(ResMgr).Init();
+        await this.node.addComponent(ResMgr).Init();
         //组件注册器
-        this.node.addComponent(Registry).Init();
+        await this.node.addComponent(Registry).Init();
         //配置加载器
-        this.node.addComponent(ConfigMgr).Init();
+        await this.node.addComponent(ConfigMgr).Init();
         //UI工厂
-        this.node.addComponent(UIFactory).Init();
+        await this.node.addComponent(UIFactory).Init();
         //节点池
-        this.node.addComponent(ObjectPool).Init();
+        await this.node.addComponent(ObjectPool).Init();
         //层级管理器
-        this.node.addComponent(UIRoot).Init();
+        await this.node.addComponent(UIRoot).Init();
         //界面管理器
-        this.node.addComponent(UIManager).Init();
+        await this.node.addComponent(UIManager).Init();
         //界面路由业务管理
-        this.node.addComponent(UIRouter).Init();
+        await this.node.addComponent(UIRouter).Init();
         //WebSocket管理器
-        this.node.addComponent(NetMgr).Init();
+        await this.node.addComponent(NetMgr).Init();
         //背包管理器
-        this.node.addComponent(BagManager).Init();
-        //数据初始化
-        await ItemConfigDB.Instance.Init();
+        await this.node.addComponent(BagManager).Init();
         //游戏入口
-        this.node.addComponent(GameEntry).EnterGame();
+        await this.node.addComponent(GameEntry).EnterGame();
     }
 }

@@ -1,6 +1,7 @@
 import {_decorator, Component, Node} from 'cc';
 import {UIOpenParams} from 'db://assets/FrameWork/core/Types';
 import {UIRouter} from 'db://assets/FrameWork/core/UIRouter';
+import {BagManager} from '../model/BagManager';
 
 export class BagItemCell extends Component {
     private slotId = -1; //格子ID
@@ -15,10 +16,14 @@ export class BagItemCell extends Component {
     }
 
     AddButtonClickEvent(node: Node) {
+        if (node.hasEventListener(Node.EventType.TOUCH_END, this.ShowItemDetails, this)) {
+            return;
+        }
         node.on(Node.EventType.TOUCH_END, this.ShowItemDetails, this);
     }
 
     ShowItemDetails() {
+        BagManager.Instance.nowSlotId = this.slotId;
         let uiParams: UIOpenParams = {
             uiName: 'ItemDetailPanel',
             timestamp: Date.now(),

@@ -1,5 +1,5 @@
 import {_decorator, Component, JsonAsset, Node} from 'cc';
-import {ItemConfig} from './ItemConfig';
+import {ItemConfig, ItemType} from './ItemConfig';
 import {ResMgr} from 'db://assets/FrameWork/core/ResMgr';
 import {Bundle, Config} from '../../constant/constant';
 
@@ -21,7 +21,19 @@ export class ItemConfigDB {
         });
     }
 
-    GetItemConfig(itemId: number): ItemConfig {
+    GetItemConfig(itemId: number): ItemConfig | undefined {
+        if (!this.itemConfigMap.has(itemId)) {
+            const nullConfig: ItemConfig = {
+                id: itemId,
+                name: '空',
+                icon: '',
+                quality: 0,
+                maxStack: 0,
+                desc: '',
+                type: null
+            };
+            return nullConfig;
+        }
         return this.itemConfigMap.get(itemId);
     }
 }

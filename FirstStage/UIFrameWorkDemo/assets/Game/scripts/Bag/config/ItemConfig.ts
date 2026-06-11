@@ -1,6 +1,7 @@
 import {_decorator, Component, Node} from 'cc';
 
 export enum ItemType {
+    None = 0, // 无类型
     Consumable = 1, // 消耗品
     Equipment = 2, // 装备
     Material = 3, // 材料

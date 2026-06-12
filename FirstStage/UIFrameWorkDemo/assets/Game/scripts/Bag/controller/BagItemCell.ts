@@ -23,7 +23,8 @@ export class BagItemCell extends Component {
     }
 
     ShowItemDetails() {
-        BagManager.Instance.nowSlotId = this.slotId;
+        BagManager.Instance.viewSlotId = this.slotId;
+        BagManager.Instance.MarkItemNotNew(this.slotId);
         let uiParams: UIOpenParams = {
             uiName: 'ItemDetailPanel',
             timestamp: Date.now(),

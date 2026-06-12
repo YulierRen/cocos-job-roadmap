@@ -8,6 +8,8 @@ import {EventType, UIType} from '../../constant/constant';
 import {ItemType} from '../config/ItemConfig';
 
 export class ItemDetailPanel extends Component {
+    private currentDisplayId = -1;
+
     protected onLoad(): void {
         this.node.getChildByPath('UseBtn').on(Node.EventType.TOUCH_END, this.UseItem, this);
         this.node.getChildByPath('DropBtn').on(Node.EventType.TOUCH_END, this.DropItem, this);
@@ -19,15 +21,26 @@ export class ItemDetailPanel extends Component {
     }
 
     Init(params: UIOpenParams) {
-        if (!BagManager.Instance.GetBagDataBySlotId(parseInt(params.payload))) {
+        const displayId = Number.parseInt(params.payload ?? '-1', 10);
+        if (Number.isNaN(displayId) || displayId < 0) {
+            console.log('无效的格子参数');
+            return;
+        }
+        console.log('打开物品详情面板，displayID:', displayId);
+        const itemData = BagManager.Instance.GetBagDataByDisplayId(displayId);
+        if (!itemData || itemData.itemId === 0) {
             console.log('没有东西在这个格子里');
             return;
         }
-        let itemId = BagManager.Instance.GetBagDataBySlotId(parseInt(params.payload)).itemId;
+
+        this.currentDisplayId = displayId;
+        BagManager.Instance.viewSlotId = displayId;
+
+        let itemId = itemData.itemId;
         EventBus.Instance.AddEventListener(EventType.UI, this.OnUIEvent, this);
         this.node.getChildByPath('Name').getComponent(Label).string = ItemConfigDB.Instance.GetItemConfig(itemId).name;
         this.node.getChildByPath('Desc').getComponent(Label).string = ItemConfigDB.Instance.GetItemConfig(itemId).desc;
-        this.node.getChildByPath('Count').getComponent(Label).string = BagManager.Instance.GetBagDataNow().count.toString();
+        this.node.getChildByPath('Count').getComponent(Label).string = itemData.count.toString();
     }
 
     UseItem() {
@@ -64,7 +77,7 @@ export class ItemDetailPanel extends Component {
             uiName: 'ItemDetailPanel',
             timestamp: Date.now(),
             canMultiOpen: false,
-            payload: BagManager.Instance.GetBagDataNow().slotIndex.toString()
+            payload: this.currentDisplayId.toString()
         };
         console.log(uiParams);
         if (uiParams.payload == null) {

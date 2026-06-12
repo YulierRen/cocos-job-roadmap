@@ -1,4 +1,4 @@
-import {_decorator, Component, Node} from 'cc';
+import {_decorator, Component, sys} from 'cc';
 import {BagSlotData} from '../config/BagData';
 import {EventBus} from 'db://assets/FrameWork/core/EventBus';
 import {EventType, UIType} from '../../constant/constant';
@@ -9,10 +9,13 @@ export class BagManager extends Component {
     public static Instance: BagManager = null;
 
     private Capacity = 30; //背包容量
+    private readonly StorageKey = 'bag_data_v1';
 
     private BagData: Array<BagSlotData> = new Array<BagSlotData>();
 
-    public nowSlotId = -1; //当前操作的格子ID
+    public viewSlotId = -1; //当前操作的格子ID
+
+    private displaySlotIds: number[] = [];
 
     protected onLoad(): void {
         if (BagManager.Instance == null) {
@@ -26,22 +29,73 @@ export class BagManager extends Component {
     async Init() {
         await ItemConfigDB.Instance.Init();
         this.Capacity = 30;
-        this.BagData = new Array(this.Capacity).fill(null).map((_, i) => ({
+        this.BagData = this.LoadBagData() ?? this.CreateDefaultBagData();
+        this.displaySlotIds = new Array(this.Capacity).fill(0).map((_, i) => i);
+
+        // if (this.BagData.every((item) => item.itemId === 0)) {
+        //     //测试用数据
+        //     this.AddItem(1001, 10);
+        //     this.AddItem(1002, 6);
+        //     this.AddItem(2001, 1);
+        //     this.AddItem(2002, 1);
+        //     this.AddItem(3001, 25);
+        //     this.AddItem(4001, 1);
+        //     this.AddItem(1001, 99);
+        //     this.AddItem(3001, 8);
+        // }
+
+        console.log('背包数据', this.BagData);
+    }
+
+    private CreateDefaultBagData(): Array<BagSlotData> {
+        return new Array(this.Capacity).fill(null).map((_, i) => ({
             slotIndex: i,
             itemId: 0,
-            count: 0
+            count: 0,
+            isNew: false
         }));
+    }
 
-        //测试用数据
-        this.AddItem(1001, 10);
-        this.AddItem(1002, 6);
-        this.AddItem(2001, 1);
-        this.AddItem(2002, 1);
-        this.AddItem(3001, 25);
-        this.AddItem(4001, 1);
-        this.AddItem(1001, 99);
-        this.AddItem(3001, 8);
-        console.log('背包数据', this.BagData);
+    SaveBagData(data: Array<BagSlotData>) {
+        try {
+            sys.localStorage.setItem(this.StorageKey, JSON.stringify(data));
+        } catch (error) {
+            console.error('保存背包数据失败', error);
+        }
+    }
+
+    LoadBagData() {
+        try {
+            const rawData = sys.localStorage.getItem(this.StorageKey);
+            if (!rawData) {
+                return null;
+            }
+
+            const parsedData = JSON.parse(rawData);
+            if (!Array.isArray(parsedData)) {
+                return null;
+            }
+
+            const defaultData = this.CreateDefaultBagData();
+            for (let i = 0; i < this.Capacity; i++) {
+                const item = parsedData[i];
+                if (!item) {
+                    continue;
+                }
+
+                defaultData[i] = {
+                    slotIndex: i,
+                    itemId: Number(item.itemId) || 0,
+                    count: Number(item.count) || 0,
+                    isNew: Boolean(item.isNew)
+                };
+            }
+
+            return defaultData;
+        } catch (error) {
+            console.error('读取背包数据失败', error);
+            return null;
+        }
     }
 
     AddItem(itemId: number, itemCount: number): boolean {
@@ -75,25 +129,31 @@ export class BagManager extends Component {
             this.BagData[i] = {
                 slotIndex: i,
                 itemId: itemId,
-                count: addCount
+                count: addCount,
+                isNew: true
             };
             remainingCount -= addCount;
         }
 
         if (remainingCount > 0) {
             console.error('格子已满');
+            this.SaveBagData(this.BagData);
             this.FlushBagPanel();
             return false;
         }
 
+        this.SaveBagData(this.BagData);
         this.FlushBagPanel();
         return true;
     }
 
     DropItem(itemId: number, itemCount: number): boolean {
-        const bagItem = this.BagData.find((item) => item.slotIndex === this.nowSlotId && item.itemId === itemId);
-        if (!bagItem) {
-            console.error(`未找到物品ID: ${itemId}，格子: ${this.nowSlotId}`);
+        // nowSlotId 是显示位置（displayId），需要通过 displaySlotIds 转换为物理位置
+        const physicalSlotId = this.displaySlotIds[this.viewSlotId];
+        const bagItem = this.BagData[physicalSlotId];
+
+        if (!bagItem || bagItem.itemId !== itemId) {
+            console.error(`未找到物品ID: ${itemId}，格子: ${this.viewSlotId}`);
             return false;
         }
 
@@ -106,10 +166,12 @@ export class BagManager extends Component {
         if (bagItem.count <= 0) {
             bagItem.itemId = 0;
             bagItem.count = 0;
+            bagItem.isNew = false;
         }
 
         console.log('删除了物品ID:', itemId, '数量:', itemCount);
 
+        this.SaveBagData(this.BagData);
         this.FlushBagPanel();
         return true;
     }
@@ -130,27 +192,64 @@ export class BagManager extends Component {
         return this.BagData;
     }
     GetBagDataNow() {
-        return this.BagData[this.nowSlotId] ?? null;
+        // nowSlotId 是显示位置，需要通过 displaySlotIds 转换为物理位置
+        if (this.viewSlotId < 0 || this.viewSlotId >= this.displaySlotIds.length) {
+            return null;
+        }
+        return this.BagData[this.displaySlotIds[this.viewSlotId]] ?? null;
     }
-    GetBagDataBySlotId(slotId: number) {
-        return this.BagData[slotId] ?? null;
+    GetBagDataByDisplayId(displayId: number) {
+        if (displayId < 0 || displayId >= this.displaySlotIds.length) {
+            return null;
+        }
+        return this.BagData[this.displaySlotIds[displayId]] ?? null;
     }
 
-    GetItemsSortedByQuality() {
-        this.BagData.sort((a, b) => {
-            const itemA = ItemConfigDB.Instance.GetItemConfig(a.itemId);
-            const itemB = ItemConfigDB.Instance.GetItemConfig(b.itemId);
-            const qualityA = itemA ? itemA.quality : 0;
-            const qualityB = itemB ? itemB.quality : 0;
-            return qualityB - qualityA; // 降序排序
+    ItemsSortedByQuality() {
+        // 只排序显示映射，不改变物理存储顺序
+        this.displaySlotIds.sort((slotA, slotB) => {
+            const itemA = this.BagData[slotA];
+            const itemB = this.BagData[slotB];
+
+            // 空槽放最后
+            if (itemA.itemId === 0 && itemB.itemId !== 0) return 1;
+            if (itemA.itemId !== 0 && itemB.itemId === 0) return -1;
+            if (itemA.itemId === 0 && itemB.itemId === 0) return 0;
+
+            const configA = ItemConfigDB.Instance.GetItemConfig(itemA.itemId);
+            const configB = ItemConfigDB.Instance.GetItemConfig(itemB.itemId);
+
+            const qualityA = configA ? configA.quality : 0;
+            const qualityB = configB ? configB.quality : 0;
+            if (qualityA !== qualityB) {
+                return qualityB - qualityA; // 品质降序
+            }
+
+            return itemB.itemId - itemA.itemId; // 同品质按 itemId 降序
         });
-        return this.BagData;
+
+        this.FlushBagPanel();
     }
     GetItemsByType(type: ItemType) {
         return this.BagData.filter((item) => {
             const itemConfig = ItemConfigDB.Instance.GetItemConfig(item.itemId);
             return itemConfig && itemConfig.type === type;
         });
+    }
+
+    MarkItemNotNew(displayId: number) {
+        if (displayId < 0 || displayId >= this.displaySlotIds.length) {
+            return;
+        }
+        const bagItem = this.BagData[this.displaySlotIds[displayId]];
+        if (bagItem) {
+            bagItem.isNew = false;
+            this.SaveBagData(this.BagData);
+        }
+        this.FlushBagPanel();
+    }
+    HasAnyNewItem(): boolean {
+        return this.BagData.some((item) => item.itemId !== 0 && item.isNew);
     }
 
     FlushBagPanel() {

@@ -11,52 +11,23 @@ import {ItemType} from '../config/ItemConfig';
 export class BagPanel extends Component {
     private bagSlots: Node = null;
     private Slots: Node[] = [];
-    private addItemBtn: Node = null;
-    private dropItemBtn: Node = null;
-    private randomItemIds: number[] = [1001, 1002, 2001, 2002, 3001, 4001];
+    private stateLabel: Label = null;
+    private filterCondition: ItemType = ItemType.None;
+    private sortCondition: number = 0;
+    private readonly randomItemIds: number[] = [1001, 1002, 2001, 2002, 3001, 4001];
+    private readonly filterTypes: ItemType[] = [ItemType.None, ItemType.Consumable, ItemType.Equipment, ItemType.Material, ItemType.Quest];
 
-    private filterCondition: ItemType = ItemType.None; // 当前的过滤条件，默认为不过滤
     protected onLoad(): void {
-        this.addItemBtn = this.node.getChildByPath('Content/TopBar/AddRandomItem');
-        this.AddBtnAddEvent(this.addItemBtn);
-        this.dropItemBtn = this.node.getChildByPath('Content/TopBar/DropRandomItem');
-        this.AddBtnDropEvent(this.dropItemBtn);
+        this.stateLabel = this.node.getChildByPath('Content/TopBar/State').getComponent(Label);
 
-        this.node.getChildByPath('Content/TopBar/Button0').on(Node.EventType.TOUCH_END, () => {
-            this.filterCondition = ItemType.None;
-            this.FlushBagPanel();
-        });
-        this.node.getChildByPath('Content/TopBar/Button1').on(Node.EventType.TOUCH_END, () => {
-            this.filterCondition = ItemType.Consumable;
-            this.FlushBagPanel();
-        });
-        this.node.getChildByPath('Content/TopBar/Button2').on(Node.EventType.TOUCH_END, () => {
-            this.filterCondition = ItemType.Equipment;
-            this.FlushBagPanel();
-        });
-        this.node.getChildByPath('Content/TopBar/Button3').on(Node.EventType.TOUCH_END, () => {
-            this.filterCondition = ItemType.Material;
-            this.FlushBagPanel();
-        });
-        this.node.getChildByPath('Content/TopBar/Button4').on(Node.EventType.TOUCH_END, () => {
-            this.filterCondition = ItemType.Quest;
-            this.FlushBagPanel();
-        });
+        this.BindAddItemEvent();
+        this.BindDropItemEvent();
+        this.BindFilterButtons();
+        this.BindSortButton();
     }
 
-    async Init() {
-        this.filterCondition = ItemType.None; // 初始化时不过滤
-
-        console.log('初始化背包界面');
-        this.bagSlots = this.node.getChildByPath('Content/Left/ScrollView/View/content');
-
-        await this.InitAllBagSlots();
-        this.FlushBagPanel();
-        EventBus.Instance.AddEventListener(EventType.UI, this.OnUIEvent, this);
-    }
-
-    AddBtnAddEvent(node: Node) {
-        node.on(Node.EventType.TOUCH_END, () => {
+    private BindAddItemEvent(): void {
+        this.node.getChildByPath('Content/TopBar/AddRandomItem').on(Node.EventType.TOUCH_END, () => {
             const randomIndex = Math.floor(Math.random() * this.randomItemIds.length);
             const randomItemId = this.randomItemIds[randomIndex];
             const itemConfig = ItemConfigDB.Instance.GetItemConfig(randomItemId);
@@ -66,9 +37,15 @@ export class BagPanel extends Component {
         });
     }
 
-    AddBtnDropEvent(node: Node) {
-        node.on(Node.EventType.TOUCH_END, () => {
-            const ItemId = BagManager.Instance.GetBagDataBySlotId(BagManager.Instance.nowSlotId)?.itemId;
+    private BindDropItemEvent(): void {
+        this.node.getChildByPath('Content/TopBar/DropRandomItem').on(Node.EventType.TOUCH_END, () => {
+            const selected = BagManager.Instance.GetBagDataByDisplayId(BagManager.Instance.viewSlotId);
+            if (!selected || selected.itemId === 0) {
+                console.warn('当前未选中可丢弃的物品');
+                return;
+            }
+
+            const ItemId = selected.itemId;
             const itemConfig = ItemConfigDB.Instance.GetItemConfig(ItemId);
             const maxStack = itemConfig?.maxStack ?? 1;
             const randomCount = Math.floor(Math.random() * maxStack) + 1;
@@ -76,63 +53,110 @@ export class BagPanel extends Component {
         });
     }
 
-    OnUIEvent(mainType: number, subType: number, udata: any) {
-        switch (subType) {
-            case UIType.FlushBagPanel:
+    private BindFilterButtons(): void {
+        this.filterTypes.forEach((type, index) => {
+            this.node.getChildByPath(`Content/TopBar/Button${index}`).on(Node.EventType.TOUCH_END, () => {
+                this.filterCondition = type;
                 this.FlushBagPanel();
-                break;
+            });
+        });
+    }
+
+    private BindSortButton(): void {
+        this.node.getChildByPath('Content/TopBar/ButtonSort').on(Node.EventType.TOUCH_END, () => {
+            BagManager.Instance.ItemsSortedByQuality();
+            this.sortCondition = 1;
+            this.FlushBagPanel();
+        });
+    }
+
+    async Init() {
+        console.log('初始化背包界面');
+        this.bagSlots = this.node.getChildByPath('Content/Left/ScrollView/View/content');
+        await this.InitAllBagSlots();
+        this.FlushBagPanel();
+        EventBus.Instance.AddEventListener(EventType.UI, this.OnUIEvent, this);
+    }
+
+    private OnUIEvent(mainType: number, subType: number, udata: any) {
+        if (subType === UIType.FlushBagPanel) {
+            this.FlushBagPanel();
         }
     }
 
     FlushBagPanel() {
-        console.log('jiaoben刷新背包界面');
+        this.UpdateStateLabel();
         this.bagSlots.removeAllChildren();
-        let items = this.Slots;
-        for (let i = 0; i < items.length; i++) {
-            //获取节点和数据
-            let item = items[i];
-            let itemData = BagManager.Instance.GetBagDataBySlotId(i);
-            //渲染数据
-            if (itemData && ItemConfigDB.Instance.GetItemConfig(itemData.itemId)) {
-                let icon = item.getChildByName('Icon');
-                let countLabel = item.getChildByName('CountLabel');
-                icon.active = true;
-                countLabel.active = true;
 
-                icon.getComponent(Label).string = ItemConfigDB.Instance.GetItemConfig(itemData.itemId).name;
-                countLabel.getComponent(Label).string = itemData.count.toString();
-            } else {
-                let icon = item.getChildByName('Icon');
-                let countLabel = item.getChildByName('CountLabel');
-                icon.active = true;
-                countLabel.active = true;
+        for (let i = 0; i < this.Slots.length; i++) {
+            const item = this.Slots[i];
+            const itemData = BagManager.Instance.GetBagDataByDisplayId(i);
 
-                icon.getComponent(Label).string = '空';
-                countLabel.getComponent(Label).string = '0';
-            }
-            if (this.filterCondition === ItemType.None) {
+            this.RenderSlotItem(item, itemData);
+
+            if (this.ShouldDisplayItem(itemData)) {
                 this.bagSlots.addChild(item);
-                console.log('添加格子', item.name);
-                continue;
-            }
-            //根据当前的过滤条件决定是否显示
-            if (this.filterCondition !== null && itemData && ItemConfigDB.Instance.GetItemConfig(itemData.itemId).type !== this.filterCondition) {
-                item.removeFromParent();
-                continue;
-            }
-            if (this.filterCondition !== null && itemData && ItemConfigDB.Instance.GetItemConfig(itemData.itemId).type === this.filterCondition) {
-                this.bagSlots.addChild(item);
-                continue;
             }
         }
     }
 
-    async InitAllBagSlots() {
+    private UpdateStateLabel(): void {
+        this.stateLabel.string = `当前过滤: ${this.StateTransform(this.filterCondition)}, 当前排序: ${this.SortTransform(this.sortCondition)}`;
+    }
+
+    private RenderSlotItem(item: Node, itemData: any): void {
+        const icon = item.getChildByName('Icon').getComponent(Label);
+        const countLabel = item.getChildByName('CountLabel').getComponent(Label);
+        const redPoint = item.getChildByName('RedPoint');
+
+        if (itemData?.isNew) {
+            redPoint.active = true;
+        } else {
+            redPoint.active = false;
+        }
+
+        if (itemData?.itemId) {
+            const config = ItemConfigDB.Instance.GetItemConfig(itemData.itemId);
+            if (config) {
+                icon.string = config.name;
+                countLabel.string = itemData.count.toString();
+                return;
+            }
+        }
+
+        icon.string = '空';
+        countLabel.string = '0';
+    }
+
+    private ShouldDisplayItem(itemData: any): boolean {
+        if (this.filterCondition === ItemType.None) return true;
+        if (!itemData?.itemId) return false;
+
+        const config = ItemConfigDB.Instance.GetItemConfig(itemData.itemId);
+        return config && config.type === this.filterCondition;
+    }
+
+    private StateTransform(state: ItemType): string {
+        const stateMap: Record<ItemType, string> = {
+            [ItemType.None]: '无',
+            [ItemType.Consumable]: '消耗品',
+            [ItemType.Equipment]: '装备',
+            [ItemType.Material]: '材料',
+            [ItemType.Quest]: '任务'
+        };
+        return stateMap[state] ?? '未知';
+    }
+
+    private SortTransform(state: number): string {
+        return state === 0 ? '默认' : '按品质排序';
+    }
+
+    private async InitAllBagSlots() {
         this.bagSlots.removeAllChildren();
         for (let i = 0; i < BagManager.Instance.GetBagSize(); i++) {
-            var slot = await UIFactory.Instance.CreateUI('BagItemCell');
+            const slot = await UIFactory.Instance.CreateUI('BagItemCell');
             slot.getComponent(BagItemCell).Init(i);
-            this.bagSlots.addChild(slot);
+            slot.getChildByName('RedPoint').active = false;
             this.Slots.push(slot);
         }
     }

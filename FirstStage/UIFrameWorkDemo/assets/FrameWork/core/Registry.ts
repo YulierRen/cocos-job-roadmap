@@ -5,6 +5,8 @@ import {TipsUI} from '../../Game/scripts/ui/TipsUI';
 import {BagPanel} from '../../Game/scripts/Bag/controller/BagPanel';
 import {BagItemCell} from '../../Game/scripts/Bag/controller/BagItemCell';
 import {ItemDetailPanel} from '../../Game/scripts/Bag/controller/ItemDetailPanel';
+import {TaskPanel} from '../../Game/scripts/Task/controller/TaskPanel';
+import {TaskItemCell} from '../../Game/scripts/Task/controller/TaskItemCell';
 const {ccclass, property} = _decorator;
 
 type Ctor<T> = new (...args: any[]) => T;
@@ -38,5 +40,8 @@ export class Registry extends Component {
         Registry.Instance.register('BagPanel', BagPanel);
         Registry.Instance.register('BagItemCell', BagItemCell);
         Registry.Instance.register('ItemDetailPanel', ItemDetailPanel);
+
+        Registry.Instance.register('TaskPanel', TaskPanel);
+        Registry.Instance.register('TaskItemCell', TaskItemCell);
     }
 }

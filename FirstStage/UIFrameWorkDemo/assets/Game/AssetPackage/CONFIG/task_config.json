@@ -1,0 +1,47 @@
+[
+    {
+        "id": 1001,
+        "name": "初入村庄",
+        "desc": "与村长对话一次",
+        "targetType": "talk",
+        "targetValue": 1,
+        "rewardItemId": 1001,
+        "rewardCount": 3
+    },
+    {
+        "id": 1002,
+        "name": "清理野狼",
+        "desc": "击败5只野狼",
+        "targetType": "kill",
+        "targetValue": 5,
+        "rewardItemId": 3001,
+        "rewardCount": 5
+    },
+    {
+        "id": 1003,
+        "name": "采集草药",
+        "desc": "采集10株草药",
+        "targetType": "collect",
+        "targetValue": 10,
+        "rewardItemId": 1002,
+        "rewardCount": 2
+    },
+    {
+        "id": 1004,
+        "name": "强化自己",
+        "desc": "将角色升级到10级",
+        "targetType": "level",
+        "targetValue": 10,
+        "rewardItemId": 2001,
+        "rewardCount": 1
+    },
+    {
+        "id": 1005,
+        "name": "新手试炼",
+        "desc": "完成3次战斗",
+        "targetType": "battle",
+        "targetValue": 3,
+        "rewardItemId": 1001,
+        "rewardCount": 5
+    }
+]

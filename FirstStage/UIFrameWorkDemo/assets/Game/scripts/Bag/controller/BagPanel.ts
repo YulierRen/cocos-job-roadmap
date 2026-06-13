@@ -22,6 +22,7 @@ export class BagPanel extends Component {
 
         this.BindAddItemEvent();
         this.BindDropItemEvent();
+        this.BindClearItemEvent();
         this.BindFilterButtons();
         this.BindSortButton();
     }
@@ -50,6 +51,12 @@ export class BagPanel extends Component {
             const maxStack = itemConfig?.maxStack ?? 1;
             const randomCount = Math.floor(Math.random() * maxStack) + 1;
             BagManager.Instance.DropItem(ItemId, randomCount);
+        });
+    }
+    private BindClearItemEvent() {
+        this.node.getChildByPath('Content/TopBar/ButtonClear').on(Node.EventType.TOUCH_END, () => {
+            BagManager.Instance.ClearItems();
+            this.FlushBagPanel();
         });
     }
 

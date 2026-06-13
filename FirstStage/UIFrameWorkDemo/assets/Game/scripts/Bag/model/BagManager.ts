@@ -1,9 +1,19 @@
-import {_decorator, Component, sys} from 'cc';
-import {BagSlotData} from '../config/BagData';
+import {_decorator, Component} from 'cc';
+import {BagSaveData, BagSlotData} from '../config/BagData';
 import {EventBus} from 'db://assets/FrameWork/core/EventBus';
+import {DBMgr} from 'db://assets/FrameWork/core/DBMgr';
 import {EventType, UIType} from '../../constant/constant';
 import {ItemConfigDB} from '../config/ItemConfigDB';
 import {ItemType} from '../config/ItemConfig';
+import {UIOpenParams} from 'db://assets/FrameWork/core/Types';
+
+export enum UseItemResult {
+    Success,
+    InvalidSlot,
+    EmptySlot,
+    NotUsable,
+    NotEnoughCount
+}
 
 export class BagManager extends Component {
     public static Instance: BagManager = null;
@@ -16,6 +26,8 @@ export class BagManager extends Component {
     public viewSlotId = -1; //当前操作的格子ID
 
     private displaySlotIds: number[] = [];
+
+    private SaveVersion = 1;
 
     protected onLoad(): void {
         if (BagManager.Instance == null) {
@@ -32,18 +44,6 @@ export class BagManager extends Component {
         this.BagData = this.LoadBagData() ?? this.CreateDefaultBagData();
         this.displaySlotIds = new Array(this.Capacity).fill(0).map((_, i) => i);
 
-        // if (this.BagData.every((item) => item.itemId === 0)) {
-        //     //测试用数据
-        //     this.AddItem(1001, 10);
-        //     this.AddItem(1002, 6);
-        //     this.AddItem(2001, 1);
-        //     this.AddItem(2002, 1);
-        //     this.AddItem(3001, 25);
-        //     this.AddItem(4001, 1);
-        //     this.AddItem(1001, 99);
-        //     this.AddItem(3001, 8);
-        // }
-
         console.log('背包数据', this.BagData);
     }
 
@@ -58,7 +58,20 @@ export class BagManager extends Component {
 
     SaveBagData(data: Array<BagSlotData>) {
         try {
-            sys.localStorage.setItem(this.StorageKey, JSON.stringify(data));
+            if (DBMgr.Instance == null) {
+                console.error('保存背包数据失败: DBMgr.Instance is null');
+                return;
+            }
+
+            const bagSaveData: BagSaveData = {
+                version: this.SaveVersion,
+                capacity: this.Capacity,
+                slots: data
+            };
+            DBMgr.Instance.SetObject(this.StorageKey, bagSaveData);
+            if (this.SaveVersion !== 1) {
+                // 未来版本升级时，可以在这里添加数据迁移逻辑
+            }
         } catch (error) {
             console.error('保存背包数据失败', error);
         }
@@ -66,12 +79,19 @@ export class BagManager extends Component {
 
     LoadBagData() {
         try {
-            const rawData = sys.localStorage.getItem(this.StorageKey);
-            if (!rawData) {
+            if (DBMgr.Instance == null) {
+                console.error('读取背包数据失败: DBMgr.Instance is null');
                 return null;
             }
 
-            const parsedData = JSON.parse(rawData);
+            const saveData = DBMgr.Instance.GetObject<BagSaveData | null>(this.StorageKey, null);
+            if (saveData.version !== 1) {
+                console.warn(`背包存档版本不匹配: ${saveData.version}`);
+                // 未来可在这里做 migrate(saveData)
+            }
+            console.log('加载背包数据', saveData);
+            this.Capacity = saveData?.capacity ?? this.Capacity;
+            const parsedData = saveData?.slots;
             if (!Array.isArray(parsedData)) {
                 return null;
             }
@@ -174,6 +194,37 @@ export class BagManager extends Component {
         this.SaveBagData(this.BagData);
         this.FlushBagPanel();
         return true;
+    }
+    ClearItems() {
+        this.BagData = this.CreateDefaultBagData();
+        this.SaveBagData(this.BagData);
+        this.FlushBagPanel();
+    }
+
+    UseItemByDisplayId(displayId: number): UseItemResult {
+        const physicalSlotId = this.displaySlotIds[displayId];
+        const bagItem = this.BagData[physicalSlotId];
+        if (!bagItem) {
+            return UseItemResult.EmptySlot;
+        }
+        if (bagItem.itemId === 0 || bagItem.count <= 0) {
+            return UseItemResult.InvalidSlot;
+        }
+        const itemInfo = ItemConfigDB.Instance.GetItemConfig(bagItem.itemId);
+        if (itemInfo.type !== ItemType.Consumable) {
+            return UseItemResult.NotUsable;
+        }
+
+        bagItem.count -= 1;
+        if (bagItem.count <= 0) {
+            bagItem.itemId = 0;
+            bagItem.count = 0;
+            bagItem.isNew = false;
+        }
+
+        this.SaveBagData(this.BagData);
+        this.FlushBagPanel();
+        return UseItemResult.Success;
     }
 
     GetGridInfo(gridId: number) {

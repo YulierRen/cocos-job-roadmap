@@ -6,3 +6,8 @@ export interface BagSlotData {
     count: number; // 数量
     isNew: boolean; // 是否新获得的物品
 }
+export interface BagSaveData {
+    version: number;
+    capacity: number;
+    slots: BagSlotData[];
+}

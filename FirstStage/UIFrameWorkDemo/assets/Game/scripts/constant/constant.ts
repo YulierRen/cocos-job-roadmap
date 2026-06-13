@@ -7,7 +7,8 @@ export enum Bundle {
 
 export enum Config {
     UIConfig = 'ui_config',
-    BagItemConfig = 'bag_item_config'
+    BagItemConfig = 'bag_item_config',
+    TaskConfig = 'task_config'
 }
 
 export enum Gui {
@@ -18,8 +19,7 @@ export enum Gui {
 export enum EventType {
     UI,
     WS,
-    FlushBagPanel,
-    UIEvent
+    FlushBagPanel
 }
 
 export enum UIType {
@@ -30,7 +30,11 @@ export enum UIType {
 
     //背包
     FlushBagPanel,
-    OpenBagPanel
+    OpenBagPanel,
+
+    //任务
+    OpenTaskPanel,
+    FlushTaskPanel
 }
 
 export enum WSType {

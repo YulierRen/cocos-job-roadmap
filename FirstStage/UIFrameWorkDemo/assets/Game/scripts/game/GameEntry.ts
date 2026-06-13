@@ -54,6 +54,10 @@ export class GameEntry extends Component {
                 console.log('调用了OnUIEvent', udata.canMultiOpen);
                 await this.EnterUI(udata);
                 break;
+            case UIType.OpenTaskPanel:
+                console.log('调用了OnUIEvent', udata.canMultiOpen);
+                await this.EnterUI(udata);
+                break;
         }
     }
     async EnterUI(udata: UIOpenParams) {
@@ -61,6 +65,7 @@ export class GameEntry extends Component {
     }
 
     async ExitUI(udata: UIOpenParams) {
+        console.log('ExitUI: ', udata.uiName);
         UIRouter.Instance.close(udata);
     }
 

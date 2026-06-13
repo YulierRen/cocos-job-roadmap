@@ -57,7 +57,7 @@ export class ConfigMgr extends Component {
             }
         });
     }
-    AddButtonEvent(node: Node, eventMainType: EventType, eventSubType: UIType, udata: UIOpenParams) {
+    AddButtonEvent(node: Node, eventMainType: EventType, eventSubType: number, udata: UIOpenParams) {
         if ((node as any).__configClickBound) {
             return;
         }
@@ -87,8 +87,7 @@ export class ConfigMgr extends Component {
             if (item.eventMainType == null || item.eventSubType == null) {
             }
             configDataObj.eventMainType = this.parseEnumValue(item.eventMainType, 'EventType', EventType) as EventType;
-            configDataObj.eventSubType = this.parseEnumValue(item.eventSubType, 'UIType', UIType) as UIType;
-            configDataObj.eventSubType = this.parseEnumValue(item.eventSubType, 'WSType', WSType) as WSType;
+            configDataObj.eventSubType = this.parseSubTypeByMainType(item.eventSubType, configDataObj.eventMainType);
             configDataObj.payload = item.payload;
             configDataObj.targetUI = item.targetUI;
             configDataObj.canMultiOpen = item.canMultiOpen;
@@ -121,7 +120,7 @@ export class ConfigMgr extends Component {
         const configDataObj = new ConfigData();
         configDataObj.buttonNodeName = result.buttonNodeName;
         configDataObj.eventMainType = this.parseEnumValue(result.eventMainType, 'EventType', EventType) as EventType;
-        configDataObj.eventSubType = this.parseEnumValue(result.eventSubType, 'UIType', UIType) as UIType;
+        configDataObj.eventSubType = this.parseSubTypeByMainType(result.eventSubType, configDataObj.eventMainType);
         configDataObj.payload = result.payload;
         configDataObj.targetUI = result.targetUI;
         configDataObj.canMultiOpen = result.canMultiOpen;
@@ -153,8 +152,7 @@ export class ConfigMgr extends Component {
         const configDataObj = new ConfigData();
         configDataObj.buttonNodeName = result.buttonNodeName;
         configDataObj.eventMainType = this.parseEnumValue(result.eventMainType, 'EventType', EventType) as EventType;
-        configDataObj.eventSubType = this.parseEnumValue(result.eventSubType, 'UIType', UIType) as UIType;
-        configDataObj.eventSubType = this.parseEnumValue(result.eventSubType, 'WSType', WSType) as WSType;
+        configDataObj.eventSubType = this.parseSubTypeByMainType(result.eventSubType, configDataObj.eventMainType);
         configDataObj.payload = result.payload;
         configDataObj.targetUI = result.targetUI;
         configDataObj.canMultiOpen = result.canMultiOpen;
@@ -223,5 +221,17 @@ export class ConfigMgr extends Component {
 
         LogMgr.Warn(`ConfigMgr parseEnumValue invalid enum member: ${value}`);
         return 0;
+    }
+
+    private parseSubTypeByMainType(rawSubType: unknown, mainType: EventType): number {
+        switch (mainType) {
+            case EventType.UI:
+                return this.parseEnumValue(rawSubType, 'UIType', UIType);
+            case EventType.WS:
+                return this.parseEnumValue(rawSubType, 'WSType', WSType);
+            default:
+                LogMgr.Warn(`ConfigMgr parseSubTypeByMainType unsupported mainType: ${mainType}`);
+                return 0;
+        }
     }
 }

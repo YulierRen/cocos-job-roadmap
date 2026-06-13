@@ -1,6 +1,6 @@
 import {_decorator, Component, Label, Node} from 'cc';
 import {UIOpenParams} from 'db://assets/FrameWork/core/Types';
-import {BagManager} from '../model/BagManager';
+import {BagManager, UseItemResult} from '../model/BagManager';
 import {ItemConfigDB} from '../config/ItemConfigDB';
 import {UIRouter} from 'db://assets/FrameWork/core/UIRouter';
 import {EventBus} from 'db://assets/FrameWork/core/EventBus';
@@ -28,8 +28,10 @@ export class ItemDetailPanel extends Component {
         }
         console.log('打开物品详情面板，displayID:', displayId);
         const itemData = BagManager.Instance.GetBagDataByDisplayId(displayId);
+        console.log('物品数据', itemData);
         if (!itemData || itemData.itemId === 0) {
             console.log('没有东西在这个格子里');
+            this.FlushDetailsPanel();
             return;
         }
 
@@ -38,9 +40,7 @@ export class ItemDetailPanel extends Component {
 
         let itemId = itemData.itemId;
         EventBus.Instance.AddEventListener(EventType.UI, this.OnUIEvent, this);
-        this.node.getChildByPath('Name').getComponent(Label).string = ItemConfigDB.Instance.GetItemConfig(itemId).name;
-        this.node.getChildByPath('Desc').getComponent(Label).string = ItemConfigDB.Instance.GetItemConfig(itemId).desc;
-        this.node.getChildByPath('Count').getComponent(Label).string = itemData.count.toString();
+        this.FlushDetailsPanel();
     }
 
     UseItem() {
@@ -49,19 +49,37 @@ export class ItemDetailPanel extends Component {
             console.error('No item data available for current slot');
             return;
         }
-        const itemInfo = ItemConfigDB.Instance.GetItemConfig(itemData.itemId);
-        console.log(itemInfo);
-        if (itemInfo.type !== ItemType.Consumable) {
-            const uiParams: UIOpenParams = {
-                uiName: 'TipsUI',
-                payload: '只能使用消耗品',
-                timestamp: Date.now(),
-                canMultiOpen: true
-            };
-            EventBus.Instance.Emit(EventType.UI, UIType.SendTips, uiParams);
-            return;
+        const uiParams: UIOpenParams = {
+            uiName: 'TipsUI',
+            payload: '',
+            timestamp: Date.now(),
+            canMultiOpen: true
+        };
+        switch (BagManager.Instance.UseItemByDisplayId(this.currentDisplayId)) {
+            case UseItemResult.Success:
+                const itemInfo = ItemConfigDB.Instance.GetItemConfig(itemData.itemId);
+                uiParams.payload = `使用了${itemInfo.name}`;
+                switch (itemInfo.name) {
+                    case '小型回血药':
+                        uiParams.payload = `使用了${itemInfo.name}` + `，恢复了50点生命值`;
+                        break;
+                    case '小型回蓝药':
+                        uiParams.payload = `使用了${itemInfo.name}` + `，恢复了50点法力值`;
+                        break;
+                }
+                break;
+            case UseItemResult.EmptySlot:
+                uiParams.payload = '请选择物品';
+                break;
+            case UseItemResult.InvalidSlot:
+                uiParams.payload = '请选择有效物品';
+                break;
+            case UseItemResult.NotUsable:
+                uiParams.payload = '不可使用的物品';
+                break;
         }
-        BagManager.Instance.DropItem(itemData.itemId, 1);
+        EventBus.Instance.Emit(EventType.UI, UIType.SendTips, uiParams);
+        this.FlushDetailsPanel();
     }
     DropItem() {
         const itemData = BagManager.Instance.GetBagDataNow();

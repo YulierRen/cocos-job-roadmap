@@ -44,6 +44,15 @@
             "payload": null,
             "targetUI": "BagPanel",
             "canMultiOpen": false
+        },
+        {
+            "id": "6",
+            "buttonNodeName": "QuestSystem",
+            "eventMainType": "EventType.UI",
+            "eventSubType": "UIType.OpenTaskPanel",
+            "payload": null,
+            "targetUI": "TaskPanel",
+            "canMultiOpen": false
         }
     ],
     "PopupUI": [

@@ -13,6 +13,8 @@ import {NetMgr} from '../FrameWork/core/Net/NetMgr';
 import {LogMgr} from '../FrameWork/core/LogMgr';
 import {BagManager} from '../Game/scripts/Bag/model/BagManager';
 import {ItemConfigDB} from '../Game/scripts/Bag/config/ItemConfigDB';
+import {DBMgr} from '../FrameWork/core/DBMgr';
+import {TaskManager} from '../Game/scripts/Task/model/TaskManager';
 const {ccclass, property} = _decorator;
 
 @ccclass('Boot')
@@ -64,10 +66,14 @@ export class Boot extends Component {
         await this.node.addComponent(UIManager).Init();
         //界面路由业务管理
         await this.node.addComponent(UIRouter).Init();
+        //DB管理器
+        await this.node.addComponent(DBMgr).Init();
         //WebSocket管理器
         await this.node.addComponent(NetMgr).Init();
         //背包管理器
         await this.node.addComponent(BagManager).Init();
+        //任务管理器
+        await this.node.addComponent(TaskManager).Init();
         //游戏入口
         await this.node.addComponent(GameEntry).EnterGame();
     }

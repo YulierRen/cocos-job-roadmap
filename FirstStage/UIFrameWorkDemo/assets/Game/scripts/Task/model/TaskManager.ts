@@ -6,6 +6,14 @@ import {TaskState} from '../config/TaskState';
 import {BagManager} from '../../Bag/model/BagManager';
 import {EventBus} from 'db://assets/FrameWork/core/EventBus';
 import {EventType, UIType} from '../../constant/constant';
+import {UIOpenParams} from 'db://assets/FrameWork/core/Types';
+
+const presentation: UIOpenParams = {
+    uiName: 'TipsUI',
+    payload: '',
+    timestamp: Date.now(),
+    canMultiOpen: true
+};
 
 export class TaskManager extends Component {
     public static Instance: TaskManager = null;
@@ -23,21 +31,22 @@ export class TaskManager extends Component {
 
     async Init() {
         console.log('TaskManager Init');
-        this.node.addComponent(TaskDB).Init();
+        this.node.addComponent(TaskDB);
+        await TaskDB.Instance.Init();
 
-        const taskConfigs = await TaskDB.Instance.GetAllConfigAndCache();
+        const taskConfigs = await TaskDB.Instance.GetAllConfigs();
         taskConfigs.forEach((config) => {
             this.AcceptTask(config.id);
         });
     }
     async AcceptTask(taskId) {
         if (this.taskMap.has(taskId)) {
-            console.warn(`Task ${taskId} has already been accepted.`);
+            this.SendTips(`任务 ${taskId} 已经被接受`);
             return;
         }
         const taskConfig = await TaskDB.Instance.GetTaskConfigById(taskId);
         if (!taskConfig) {
-            console.warn(`Task ${taskId} does not exist.`);
+            this.SendTips(`任务配置 ${taskId} 不存在`);
             return;
         }
         const taskData: TaskData = {
@@ -46,35 +55,48 @@ export class TaskManager extends Component {
             state: TaskState.Accepted
         };
         this.taskMap.set(taskId, taskData);
+        this.FlushTaskData();
     }
     async AddProgress(taskId, value) {
         if (!this.taskMap.has(taskId)) {
-            console.warn(`Task ${taskId} has not been accepted.`);
+            this.SendTips(`任务 ${taskId} 尚未被接受`);
             return;
         }
         const taskData = this.taskMap.get(taskId);
         const taskConfig = await TaskDB.Instance.GetTaskConfigById(taskId);
         taskData.progress += value;
+        if (taskData.progress > taskConfig.targetValue) {
+            taskData.progress = taskConfig.targetValue;
+        }
+        if (taskData.state === TaskState.Completed) {
+            this.SendTips(`任务 ${taskId} 已经完成，快去领取奖励吧！`);
+            return;
+        }
         if (taskData.progress >= taskConfig.targetValue) {
             taskData.state = TaskState.Completed;
+            this.SendTips(`任务 ${taskId} 已经完成，快去领取奖励吧！`);
         }
         this.FlushTaskData();
     }
-    async ClaimReward(taskId) {
+    async ClaimReward(taskId: number) {
         const taskData = this.taskMap.get(taskId);
-        const taskConfig = await TaskDB.Instance.GetTaskConfigById(taskId);
+        if (taskData == null) {
+            this.SendTips(`任务 ${taskId} 尚未被接受`);
+            return;
+        }
 
-        if (!this.taskMap.has(taskId)) {
-            console.warn(`Task ${taskId} has not been accepted.`);
+        const taskConfig = await TaskDB.Instance.GetTaskConfigById(taskId);
+        if (taskConfig == null) {
+            console.error(`任务配置 ${taskId} 不存在`);
             return;
         }
 
         if (taskData.progress < taskConfig.targetValue) {
-            console.warn(`Task ${taskId} is not completed yet.`);
+            this.SendTips(`任务 ${taskId} 尚未完成`);
             return;
         }
         if (taskData.state === TaskState.Rewarded) {
-            console.warn(`Task ${taskId} reward has already been claimed.`);
+            this.SendTips(`任务 ${taskId} 奖励已经领取`);
             return;
         }
 
@@ -82,7 +104,20 @@ export class TaskManager extends Component {
         taskData.state = TaskState.Rewarded;
 
         BagManager.Instance.AddItem(taskConfig.rewardItemId, taskConfig.rewardCount);
+        this.SendTips(`任务 ${taskId} 奖励已领取：${taskConfig.rewardCount} 个 ${taskConfig.name}`);
 
+        this.FlushTaskData();
+    }
+
+    removeTask(taskId) {
+        if (!this.taskMap.has(taskId)) {
+            this.SendTips(`任务 ${taskId} 尚未被接受`);
+            return;
+        }
+        if (this.taskMap.get(taskId).state !== TaskState.Accepted) {
+            this.SendTips(`任务 ${taskId} 不能被移除`);
+            return;
+        }
         this.taskMap.delete(taskId);
     }
 
@@ -95,5 +130,10 @@ export class TaskManager extends Component {
 
     FlushTaskData() {
         EventBus.Instance.Emit(EventType.UI, UIType.FlushTaskPanel, null);
+    }
+
+    SendTips(message: string) {
+        presentation.payload = message;
+        EventBus.Instance.Emit(EventType.UI, UIType.SendTips, presentation);
     }
 }
